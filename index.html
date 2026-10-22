@@ -262,7 +262,7 @@ body{height:100%;margin:0;overflow:hidden;color:var(--paper);font-family:var(--f
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="gridTitle">
     <div class="ph"><h2 id="gridTitle">All puzzles</h2><button class="x" data-close aria-label="Close">×</button></div>
     <div id="gridBody"></div>
-    <div class="foot"><span class="note">✓ means the answer has been shown.</span><button class="wbtn ghost" id="restartBtn">Clear answers and start over</button></div>
+    <div class="foot"><span class="note">✓ means the answer has been shown.</span><button class="wbtn ghost" id="restartBtn">Start over</button></div>
   </div>
 </div>
 
@@ -285,14 +285,16 @@ const app = document.getElementById('app'), st = document.getElementById('stage'
 const $ = id => document.getElementById(id);
 const E = {pills:$('pills'), prompt:$('prompt'), card:$('card'), content:$('content'), footer:$('footer'),
   bottomText:$('bottomText'), main:$('mainBtn'), prev:$('prevBtn'), next:$('nextBtn'), hint:$('hintBtn')};
-let S = {i:0, rev:{}, players:[]};
+let S = {i:0, seen:{}, players:[]};
+let revealed = false;  // answers always start hidden; only the ✓ marks are remembered
 let hintOn = false;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function load(){ try { const d = JSON.parse(localStorage.getItem(KEY) || 'null'); if (d && typeof d === 'object') adopt(d); } catch(e) {} }
 function adopt(d){
   if (Number.isInteger(d.i) && d.i >= 0 && d.i < SL.length) S.i = d.i;
-  if (d.rev && typeof d.rev === 'object') S.rev = d.rev;
+  const seen = d.seen || d.rev;
+  if (seen && typeof seen === 'object') S.seen = seen;
   if (Array.isArray(d.players)) S.players = d.players.filter(p => p && typeof p.n === 'string').map(p => ({n:p.n.slice(0,24), s:Number(p.s)||0}));
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
@@ -351,7 +353,7 @@ function anim(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classL
 function render(mode){
   const s = SL[S.i];
   const puzzle = s.kind === 'puzzle';
-  const shown = puzzle && !!S.rev[s.id];
+  const shown = puzzle && revealed;
   E.pills.innerHTML = s.pills.map(p => '<div class="pill ' + p[0] + '">' + p[1] + '</div>').join('');
   E.prompt.innerHTML = puzzle ? (shown ? s.aPrompt : ASK) : s.prompt;
   if (mode !== 'reveal') E.content.innerHTML = s.id === 'end' ? endBody() : s.body;
@@ -375,13 +377,13 @@ function render(mode){
   save();
 }
 
-function go(i, dir){ i = Math.max(0, Math.min(SL.length - 1, i)); if (i === S.i) return; hintOn = false; S.i = i; render(dir || 'fwd'); }
+function go(i, dir){ i = Math.max(0, Math.min(SL.length - 1, i)); if (i === S.i) return; hintOn = false; revealed = false; S.i = i; render(dir || 'fwd'); }
 function next(){ go(S.i + 1, 'fwd'); }
 function prev(){ go(S.i - 1, 'back'); }
-function toggle(){ const s = SL[S.i]; if (s.kind !== 'puzzle') return; if (S.rev[s.id]) delete S.rev[s.id]; else S.rev[s.id] = 1; hintOn = false; render(S.rev[s.id] ? 'reveal' : 'hint'); }
+function toggle(){ const s = SL[S.i]; if (s.kind !== 'puzzle') return; revealed = !revealed; if (revealed) S.seen[s.id] = 1; hintOn = false; render(revealed ? 'reveal' : 'hint'); }
 function primary(){
   const s = SL[S.i];
-  if (s.kind === 'puzzle' && !S.rev[s.id]) { S.rev[s.id] = 1; hintOn = false; render('reveal'); }
+  if (s.kind === 'puzzle' && !revealed) { revealed = true; S.seen[s.id] = 1; hintOn = false; render('reveal'); }
   else if (s.id === 'end') go(0, 'back');
   else next();
 }
@@ -431,7 +433,7 @@ function drawGrid(){
   let html = '';
   for (const [name, test] of groups) {
     const tiles = SL.map((s, i) => [s, i]).filter(([s]) => test(s)).map(([s, i]) =>
-      '<button class="tile ' + (s.level || 'wide') + (S.rev[s.id] ? ' done' : '') + (i === S.i ? ' cur' : '') + '" data-go="' + i + '">' + esc(s.tile) + '</button>').join('');
+      '<button class="tile ' + (s.level || 'wide') + (S.seen[s.id] ? ' done' : '') + (i === S.i ? ' cur' : '') + '" data-go="' + i + '">' + esc(s.tile) + '</button>').join('');
     html += '<div class="sec">' + name + '</div><div class="tiles">' + tiles + '</div>';
   }
   $('gridBody').innerHTML = html;
@@ -443,7 +445,7 @@ function arm(btn, label, fn){
   armed = btn; const orig = btn.dataset.label || btn.textContent; btn.dataset.label = orig; btn.textContent = label;
   setTimeout(() => { if (armed === btn) { armed = null; btn.textContent = orig; } }, 3000);
 }
-$('restartBtn').addEventListener('click', e => arm(e.currentTarget, 'Tap again to clear', () => { S.rev = {}; hintOn = false; closeSheets(); e.currentTarget.textContent = e.currentTarget.dataset.label; S.i = 0; render('back'); }));
+$('restartBtn').addEventListener('click', e => arm(e.currentTarget, 'Tap again to start over', () => { S.seen = {}; revealed = false; hintOn = false; closeSheets(); e.currentTarget.textContent = e.currentTarget.dataset.label; S.i = 0; render('back'); }));
 
 function drawScores(){
   const list = $('scoreList');
