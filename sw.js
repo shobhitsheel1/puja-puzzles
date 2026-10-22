@@ -1,5 +1,5 @@
 // Keeps Puja Puzzles working offline once it has been opened.
-const CACHE = 'puja-puzzles-v10';
+const CACHE = 'puja-puzzles-v11';
 const FILES = [
   "./",
   "index.html",
@@ -102,11 +102,11 @@ const FILES = [
   "assets/v-pratham-b23.mp3",
   "assets/v-pratham-b24.mp3",
   "assets/v-pratham-b25.mp3",
-  "assets/v-pratham-b26.mp3",
+  "assets/v-pratham-b26v2.mp3",
   "assets/v-pratham-b27.mp3",
-  "assets/v-pratham-b28.mp3",
-  "assets/v-pratham-b29.mp3",
-  "assets/v-pratham-b30.mp3",
+  "assets/v-pratham-b28v2.mp3",
+  "assets/v-pratham-b29v2.mp3",
+  "assets/v-pratham-b30v2.mp3",
   "assets/v-pratham-sample.mp3",
   "assets/v-pratham-tath.mp3",
   "assets/v-pratham-test.mp3",
@@ -125,11 +125,11 @@ const FILES = [
   "assets/v-pratham-w13.mp3",
   "assets/v-pratham-w14.mp3",
   "assets/v-pratham-w15.mp3",
-  "assets/v-pratham-w16.mp3",
-  "assets/v-pratham-w17.mp3",
+  "assets/v-pratham-w16v2.mp3",
+  "assets/v-pratham-w17v2.mp3",
   "assets/v-pratham-w18.mp3",
   "assets/v-pratham-w19.mp3",
-  "assets/v-pratham-w20.mp3",
+  "assets/v-pratham-w20v2.mp3",
   "assets/v-pratham-w21.mp3",
   "assets/v-pratham-w22.mp3",
   "assets/v-pratham-w23.mp3",
@@ -141,7 +141,7 @@ const FILES = [
   "assets/v-pratham-w29.mp3",
   "assets/v-pratham-w30.mp3",
   "assets/v-pratham-w31.mp3",
-  "assets/v-pratham-w32.mp3",
+  "assets/v-pratham-w32v2.mp3",
   "assets/v-pratham-welcome.mp3",
   "assets/v-rohan-b01.mp3",
   "assets/v-rohan-b02.mp3",
@@ -168,11 +168,11 @@ const FILES = [
   "assets/v-rohan-b23.mp3",
   "assets/v-rohan-b24.mp3",
   "assets/v-rohan-b25.mp3",
-  "assets/v-rohan-b26.mp3",
+  "assets/v-rohan-b26v2.mp3",
   "assets/v-rohan-b27.mp3",
-  "assets/v-rohan-b28.mp3",
-  "assets/v-rohan-b29.mp3",
-  "assets/v-rohan-b30.mp3",
+  "assets/v-rohan-b28v2.mp3",
+  "assets/v-rohan-b29v2.mp3",
+  "assets/v-rohan-b30v2.mp3",
   "assets/v-rohan-sample.mp3",
   "assets/v-rohan-tath.mp3",
   "assets/v-rohan-test.mp3",
@@ -191,11 +191,11 @@ const FILES = [
   "assets/v-rohan-w13.mp3",
   "assets/v-rohan-w14.mp3",
   "assets/v-rohan-w15.mp3",
-  "assets/v-rohan-w16.mp3",
-  "assets/v-rohan-w17.mp3",
+  "assets/v-rohan-w16v2.mp3",
+  "assets/v-rohan-w17v2.mp3",
   "assets/v-rohan-w18.mp3",
   "assets/v-rohan-w19.mp3",
-  "assets/v-rohan-w20.mp3",
+  "assets/v-rohan-w20v2.mp3",
   "assets/v-rohan-w21.mp3",
   "assets/v-rohan-w22.mp3",
   "assets/v-rohan-w23.mp3",
@@ -207,12 +207,14 @@ const FILES = [
   "assets/v-rohan-w29.mp3",
   "assets/v-rohan-w30.mp3",
   "assets/v-rohan-w31.mp3",
-  "assets/v-rohan-w32.mp3",
+  "assets/v-rohan-w32v2.mp3",
   "assets/v-rohan-welcome.mp3"
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
+  // 'reload' skips the browser's short-term cache, so a new version always saves fresh files.
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES.map(f => new Request(f, {cache: 'reload'}))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
