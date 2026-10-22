@@ -1,0 +1,36 @@
+The spoken Hindi lines (assets/v-*.mp3) were generated with Piper text-to-speech voices,
+run offline with sherpa-onnx (https://github.com/k2-fsa/sherpa-onnx). Non-commercial use only.
+
+# Model card for rohan (medium)
+
+* Language: hi_IN (Hindi, India)
+* Speakers: 1
+* Quality: medium
+* Samplerate: 22,050Hz
+
+## Dataset
+
+* URL: https://www.iitm.ac.in/donlab/indictts
+* Database Name: Hindi Mono Male
+* License:  https://www.iitm.ac.in/donlab/indictts/downloads/license.pdf
+
+## Training
+
+Finetuned from U.S. English lessac voice (medium quality).
+
+
+# Model card for pratham (medium)
+
+* Language: hi_IN (Hindi, India)
+* Speakers: 1
+* Quality: medium
+* Samplerate: 22,050Hz
+
+## Dataset
+
+* License: http://creativecommons.org/licenses/by-nc-sa/4.0/
+
+## Training
+
+Dataset: https://github.com/AI4Bharat/indicnlp_corpus
+Trained by: https://github.com/PravalX

@@ -632,19 +632,20 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 // ---------------- sound: bell and buzzer from Web Audio, blessings from the phone's own voice
 let actx = null, unlocked = false, voices = [];
-function audio(){
-  if (!S.sfx) return null;
+function ctx(){
   try {
     if (!actx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; actx = new C(); }
     if (actx.state === 'suspended') actx.resume();
     return actx;
   } catch(e) { return null; }
 }
+function audio(){ return S.sfx ? ctx() : null; }
 function unlock(){
   if (unlocked) return; unlocked = true;
   try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch(e) {}
-  audio();
+  ctx();
   try { if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } } catch(e) {}
+  setTimeout(preloadClips, 300);
 }
 function tone(ctx, f, t0, dur, gain, type, dest){
   const o = ctx.createOscillator(), g = ctx.createGain();
@@ -672,7 +673,9 @@ function loadVoices(){
 }
 if ('speechSynthesis' in window) { loadVoices(); try { speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch(e) { speechSynthesis.onvoiceschanged = loadVoices; } }
 function usable(){ return voices.filter(v => !NOVELTY.test(v.name)); }
-function rank(v){ let s = 0; if (/enhanced|premium|neural|natural|siri/i.test(v.name)) s += 5; if (/google/i.test(v.name)) s += 4; if (v.localService === false) s += 1; return s; }
+// Bhagwan should sound like a man, so male phone voices rank first.
+const MALE = /\b(rishi|ravi|prabhat|hemant|madhur|aaron|alex|arthur|daniel|gordon|lee|oliver|tom|thomas|male)\b/i;
+function rank(v){ let s = 0; if (MALE.test(v.name)) s += 6; if (/enhanced|premium|neural|natural|siri/i.test(v.name)) s += 3; if (/google/i.test(v.name)) s += 2; if (v.localService === false) s += 1; return s; }
 function best(re){ const l = usable().filter(v => re.test(v.lang)); l.sort((a, b) => rank(b) - rank(a)); return l[0] || null; }
 const HI = /^hi([-_]|$)/i, EN_IN = /^en[-_]IN/i;
 function voiceFor(){
@@ -680,10 +683,49 @@ function voiceFor(){
   if (S.lang === 'hi') { const h = best(HI); if (h) return h; }
   return best(EN_IN) || best(/^en[-_](GB|AU|US|IE|ZA)/i) || best(/^en/i) || null;
 }
-function say(hi, en){
-  if (!S.voice || !('speechSynthesis' in window)) return;
+// Built-in natural Hindi male voices: every line is pre-recorded, so it sounds the same on every phone.
+const NATURAL = {rohan: 'Rohan', pratham: 'Pratham'};
+function naturalVoice(){
+  if (S.lang !== 'hi') return null;
+  if (!S.voiceName) return 'rohan';
+  const m = /^natural:(\w+)$/.exec(S.voiceName);
+  return m && NATURAL[m[1]] ? m[1] : null;
+}
+const clips = {};
+function clip(key, nat){
+  const url = 'assets/v-' + nat + '-' + key + '.mp3';
+  if (!clips[url]) {
+    const c = ctx(); if (!c) return Promise.resolve(null);
+    clips[url] = fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(b => new Promise((res, rej) => c.decodeAudioData(b, res, rej)))
+      .catch(() => { delete clips[url]; return null; });
+  }
+  return clips[url];
+}
+function preloadClips(){
+  const nat = naturalVoice(); if (!nat) return;
+  ['tath', 'sample', 'wrong', 'test'].concat(BLESSINGS.map((_, i) => 'b' + String(i + 1).padStart(2, '0'))).forEach(k => clip(k, nat));
+}
+let voiceSrc = null, sayId = 0;
+function stopClip(){ try { if (voiceSrc) voiceSrc.stop(); } catch(e) {} voiceSrc = null; }
+function say(hi, en, key){
+  if (!S.voice) return;
+  hush();
+  const nat = naturalVoice(), id = ++sayId;
+  if (nat && key) {
+    clip(key, nat).then(buf => {
+      if (id !== sayId) return;
+      const c = ctx();
+      if (!buf || !c) { speak(hi, en); return; }
+      const src = c.createBufferSource(); src.buffer = buf; src.connect(c.destination); src.start(); voiceSrc = src;
+    });
+    return;
+  }
+  speak(hi, en);
+}
+function speak(hi, en){
+  if (!('speechSynthesis' in window)) return;
   try {
-    speechSynthesis.cancel();
     if (!voices.length) loadVoices();
     const v = voiceFor(), hindi = v ? HI.test(v.lang) : S.lang === 'hi';
     const u = new SpeechSynthesisUtterance(hindi ? hi : en);
@@ -692,12 +734,13 @@ function say(hi, en){
     speechSynthesis.speak(u);
   } catch(e) {}
 }
-function hush(){ try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch(e) {} }
+function hush(){ sayId++; stopClip(); try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch(e) {} }
 
 let bq = [];
 function nextBlessing(){
   if (!bq.length) { bq = BLESSINGS.map((b, i) => i); for (let i = bq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [bq[i], bq[j]] = [bq[j], bq[i]]; } }
-  return BLESSINGS[bq.pop()];
+  const i = bq.pop();
+  return Object.assign({key: 'b' + String(i + 1).padStart(2, '0')}, BLESSINGS[i]);
 }
 const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function petals(){
@@ -735,7 +778,7 @@ function showBlessing(){
   drawPts();
   E.bless.hidden = false; anim(E.bless, 'in');
   petals(); chime();
-  setTimeout(() => { if (!E.bless.hidden) say('सही जवाब! ' + b.hi + ' तथास्तु!', 'Sahi jawab! ' + b.en + ' Tathastu!'); }, 500);
+  setTimeout(() => { if (!E.bless.hidden) say('सही जवाब! ' + b.hi + ' तथास्तु!', 'Sahi jawab! ' + b.en + ' Tathastu!', b.key); }, 500);
 }
 function hideBless(){ if (E.bless.hidden) return; E.bless.hidden = true; $('petals').innerHTML = ''; hush(); }
 E.bless.addEventListener('click', e => { if (e.target.closest('.bl-chip')) return; hideBless(); });
@@ -744,7 +787,7 @@ function showWrong(){
   hideBless();
   E.wrongFx.hidden = false; anim(E.wrongFx, 'in');
   E.card.classList.remove('shake'); void E.card.offsetWidth; E.card.classList.add('shake');
-  buzz(); say('ग़लत जवाब! फिर से कोशिश करो।', 'Galat jawab! Try again.');
+  buzz(); say('ग़लत जवाब! फिर से कोशिश करो।', 'Galat jawab! Try again.', 'wrong');
   clearTimeout(wrongT); wrongT = setTimeout(hideWrong, 1800);
 }
 function hideWrong(){ clearTimeout(wrongT); E.wrongFx.hidden = true; E.card.classList.remove('shake'); }
@@ -760,19 +803,21 @@ function drawVoices(){
   const hi = list.filter(v => HI.test(v.lang)), inEn = list.filter(v => EN_IN.test(v.lang)), other = list.filter(v => /^en/i.test(v.lang) && !EN_IN.test(v.lang));
   const opt = v => '<option value="' + esc(v.name) + '">' + esc(v.name) + '</option>';
   const grp = (label, arr) => arr.length ? '<optgroup label="' + label + '">' + arr.map(opt).join('') + '</optgroup>' : '';
-  sel.innerHTML = '<option value="">Automatic</option>' + grp('Hindi', hi) + grp('Indian English', inEn) + grp('Other English', other);
-  sel.value = list.some(v => v.name === S.voiceName) ? S.voiceName : '';
-  const auto = voiceFor();
-  $('voiceNote').textContent = (S.lang === 'hi' && !hi.length)
-    ? 'This phone has no Hindi voice yet, so blessings will be spoken in English. You can add a Hindi voice in Settings > Accessibility > Spoken Content > Voices.'
-    : (auto ? 'Speaking with: ' + auto.name + '.' : '');
+  sel.innerHTML = '<option value="">Automatic' + (S.lang === 'hi' ? ' (Rohan)' : '') + '</option>'
+    + '<optgroup label="Natural Hindi voices, male">' + Object.entries(NATURAL).map(([k, n]) => '<option value="natural:' + k + '">' + n + '</option>').join('') + '</optgroup>'
+    + grp('Phone voices: Hindi', hi) + grp('Phone voices: Indian English', inEn) + grp('Phone voices: other English', other);
+  sel.value = (/^natural:/.test(S.voiceName) || list.some(v => v.name === S.voiceName)) ? S.voiceName : '';
+  const nat = naturalVoice(), dev = voiceFor();
+  $('voiceNote').textContent = nat ? 'Speaking with the built-in natural Hindi voice: ' + NATURAL[nat] + '.'
+    : (S.lang === 'en' && /^natural:/.test(S.voiceName)) ? 'The natural voices speak Hindi only. Switch the language to हिंदी to use them.'
+    : dev ? 'Speaking with your phone\'s voice: ' + dev.name + '.' : '';
 }
-$('langHi').addEventListener('click', () => { unlock(); S.lang = 'hi'; save(); drawSettings(); say('तथास्तु! मैं तुम्हें आशीर्वाद देता हूँ।', 'Tathastu! I bless you.'); });
-$('langEn').addEventListener('click', () => { unlock(); S.lang = 'en'; save(); drawSettings(); say('तथास्तु! मैं तुम्हें आशीर्वाद देता हूँ।', 'Tathastu! I bless you.'); });
-$('voiceSel').addEventListener('change', e => { unlock(); S.voiceName = e.target.value; save(); drawVoices(); say('तथास्तु! मैं तुम्हें आशीर्वाद देता हूँ।', 'Tathastu! I bless you.'); });
+$('langHi').addEventListener('click', () => { unlock(); S.lang = 'hi'; save(); drawSettings(); preloadClips(); say('तथास्तु! मैं तुम्हें आशीर्वाद देता हूँ।', 'Tathastu! I bless you.', 'sample'); });
+$('langEn').addEventListener('click', () => { unlock(); S.lang = 'en'; save(); drawSettings(); say('तथास्तु! मैं तुम्हें आशीर्वाद देता हूँ।', 'Tathastu! I bless you.', 'sample'); });
+$('voiceSel').addEventListener('change', e => { unlock(); S.voiceName = e.target.value; save(); drawVoices(); preloadClips(); say('तथास्तु! मैं तुम्हें आशीर्वाद देता हूँ।', 'Tathastu! I bless you.', 'sample'); });
 $('sfxTog').addEventListener('click', () => { unlock(); S.sfx = !S.sfx; save(); drawSettings(); if (S.sfx) chime(); });
-$('voiceTog').addEventListener('click', () => { unlock(); S.voice = !S.voice; save(); drawSettings(); if (!S.voice) hush(); else say('तथास्तु!', 'Tathastu!'); });
-$('testSnd').addEventListener('click', () => { unlock(); chime(); setTimeout(() => say('तथास्तु! आवाज़ ठीक आ रही है।', 'Tathastu! The sound is working.'), 350); });
+$('voiceTog').addEventListener('click', () => { unlock(); S.voice = !S.voice; save(); drawSettings(); if (!S.voice) hush(); else say('तथास्तु!', 'Tathastu!', 'tath'); });
+$('testSnd').addEventListener('click', () => { unlock(); chime(); setTimeout(() => say('तथास्तु! आवाज़ ठीक आ रही है।', 'Tathastu! The sound is working.', 'test'), 350); });
 
 // ---------------- overlays
 const sheets = {grid:$('gridSheet'), scores:$('scoreSheet')};
