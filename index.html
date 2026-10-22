@@ -792,7 +792,8 @@ function clip(key, nat){
 }
 function preloadClips(){
   const nat = naturalVoice(); if (!nat) return;
-  ['tath', 'sample', 'wrong', 'test'].concat(BLESSINGS.map((_, i) => 'b' + String(i + 1).padStart(2, '0'))).forEach(k => clip(k, nat));
+  const keys = (list, p) => list.map((_, i) => p + String(i + 1).padStart(2, '0'));
+  ['tath', 'sample', 'test'].concat(keys(WRONGS, 'w'), keys(BLESSINGS, 'b')).forEach(k => clip(k, nat));
 }
 let voiceSrc = null, sayId = 0;
 function stopClip(){ try { if (voiceSrc) voiceSrc.stop(); } catch(e) {} voiceSrc = null; }
