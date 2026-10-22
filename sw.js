@@ -1,5 +1,5 @@
 // Keeps Puja Puzzles working offline once it has been opened.
-const CACHE = 'puja-puzzles-v3';
+const CACHE = 'puja-puzzles-v4';
 const FILES = [
   "./",
   "index.html",
@@ -75,6 +75,7 @@ const FILES = [
   "assets/1fa90.webp",
   "assets/1fa94.webp",
   "assets/2601-fe0f.webp",
+  "assets/274c.webp",
   "assets/2753.webp",
   "assets/2b50.webp"
 ];
