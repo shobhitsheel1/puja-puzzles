@@ -10,5 +10,6 @@ Turn the phone sideways for the TV layout. Tap the card or **Reveal answer** to 
 - 3D emoji pictures: [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) by Microsoft (MIT)
 - Fonts: Poppins, Anton and Baloo 2 (SIL Open Font License), Luckiest Guy (Apache 2.0)
 - Bhagwan's Hindi voice: recorded with the Piper voices "rohan" (IIT Madras Indic TTS data) and "pratham" (CC BY-NC-SA 4.0 data), run offline with sherpa-onnx. Non-commercial use only.
+- Lip sync: mouth timings worked out from each voice line with [Rhubarb Lip Sync](https://github.com/DanielSWolf/rhubarb-lip-sync) by Daniel Wolf (MIT)
 
 License texts are in the `licenses` folder.
