@@ -1,5 +1,5 @@
 // Keeps Puja Puzzles working offline once it has been opened.
-const CACHE = 'puja-puzzles-v6';
+const CACHE = 'puja-puzzles-v7';
 const FILES = [
   "./",
   "index.html",
@@ -75,7 +75,6 @@ const FILES = [
   "assets/1fa90.webp",
   "assets/1fa94.webp",
   "assets/2601-fe0f.webp",
-  "assets/274c.webp",
   "assets/2753.webp",
   "assets/2b50.webp",
   "assets/v-pratham-b01.mp3",
@@ -103,7 +102,18 @@ const FILES = [
   "assets/v-pratham-sample.mp3",
   "assets/v-pratham-tath.mp3",
   "assets/v-pratham-test.mp3",
-  "assets/v-pratham-wrong.mp3",
+  "assets/v-pratham-w01.mp3",
+  "assets/v-pratham-w02.mp3",
+  "assets/v-pratham-w03.mp3",
+  "assets/v-pratham-w04.mp3",
+  "assets/v-pratham-w05.mp3",
+  "assets/v-pratham-w06.mp3",
+  "assets/v-pratham-w07.mp3",
+  "assets/v-pratham-w08.mp3",
+  "assets/v-pratham-w09.mp3",
+  "assets/v-pratham-w10.mp3",
+  "assets/v-pratham-w11.mp3",
+  "assets/v-pratham-w12.mp3",
   "assets/v-rohan-b01.mp3",
   "assets/v-rohan-b02.mp3",
   "assets/v-rohan-b03.mp3",
@@ -129,7 +139,18 @@ const FILES = [
   "assets/v-rohan-sample.mp3",
   "assets/v-rohan-tath.mp3",
   "assets/v-rohan-test.mp3",
-  "assets/v-rohan-wrong.mp3"
+  "assets/v-rohan-w01.mp3",
+  "assets/v-rohan-w02.mp3",
+  "assets/v-rohan-w03.mp3",
+  "assets/v-rohan-w04.mp3",
+  "assets/v-rohan-w05.mp3",
+  "assets/v-rohan-w06.mp3",
+  "assets/v-rohan-w07.mp3",
+  "assets/v-rohan-w08.mp3",
+  "assets/v-rohan-w09.mp3",
+  "assets/v-rohan-w10.mp3",
+  "assets/v-rohan-w11.mp3",
+  "assets/v-rohan-w12.mp3"
 ];
 
 self.addEventListener('install', event => {
