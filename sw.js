@@ -1,5 +1,5 @@
 // Keeps Puja Puzzles working offline once it has been opened.
-const CACHE = 'puja-puzzles-v2';
+const CACHE = 'puja-puzzles-v3';
 const FILES = [
   "./",
   "index.html",
@@ -19,10 +19,12 @@ const FILES = [
   "assets/1f195.webp",
   "assets/1f30a.webp",
   "assets/1f320.webp",
+  "assets/1f333.webp",
   "assets/1f340.webp",
   "assets/1f343.webp",
   "assets/1f36f.webp",
   "assets/1f375.webp",
+  "assets/1f382.webp",
   "assets/1f3a8.webp",
   "assets/1f3b6.webp",
   "assets/1f3c6.webp",
@@ -30,6 +32,7 @@ const FILES = [
   "assets/1f3fa.webp",
   "assets/1f400.webp",
   "assets/1f407.webp",
+  "assets/1f40d.webp",
   "assets/1f40f.webp",
   "assets/1f417.webp",
   "assets/1f41d.webp",
@@ -39,12 +42,16 @@ const FILES = [
   "assets/1f441-fe0f.webp",
   "assets/1f442.webp",
   "assets/1f451.webp",
+  "assets/1f45e.webp",
+  "assets/1f45f.webp",
   "assets/1f463.webp",
   "assets/1f468.webp",
   "assets/1f4a1.webp",
   "assets/1f4a4.webp",
   "assets/1f4cd.webp",
   "assets/1f4e2.webp",
+  "assets/1f50a.webp",
+  "assets/1f511.webp",
   "assets/1f514.webp",
   "assets/1f522.webp",
   "assets/1f524.webp",
@@ -52,7 +59,9 @@ const FILES = [
   "assets/1f5bc-fe0f.webp",
   "assets/1f620.webp",
   "assets/1f622.webp",
+  "assets/1f645.webp",
   "assets/1f64f.webp",
+  "assets/1f697.webp",
   "assets/1f6a7.webp",
   "assets/1f6d5.webp",
   "assets/1f914.webp",
@@ -62,8 +71,12 @@ const FILES = [
   "assets/1f949.webp",
   "assets/1f981.webp",
   "assets/1f9e9.webp",
+  "assets/1f9ea.webp",
+  "assets/1fa90.webp",
   "assets/1fa94.webp",
-  "assets/2753.webp"
+  "assets/2601-fe0f.webp",
+  "assets/2753.webp",
+  "assets/2b50.webp"
 ];
 
 self.addEventListener('install', event => {

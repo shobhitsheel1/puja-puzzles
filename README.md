@@ -1,6 +1,6 @@
 # Puja Puzzles
 
-A tap-to-reveal rebus quiz on Satyanarayan Puja and Hindu mythology, with warm-ups, hints and a scoreboard. Six warm-ups, then 24 puzzles from Satyanarayan Katha, Ramayan, Mahabharat and more.
+A tap-to-reveal rebus quiz on Satyanarayan Puja and Hindu mythology, with warm-ups, hints and a scoreboard. Six warm-ups, then 39 puzzles from Satyanarayan Katha, Ramayan, Mahabharat and more.
 
 **Play:** open the GitHub Pages link on your phone, then use Share → Add to Home Screen to get it as an app.
 Turn the phone sideways for the TV layout. Tap the card or **Reveal answer** to show the answer; swipe to move between puzzles.
