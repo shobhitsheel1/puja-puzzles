@@ -1,5 +1,5 @@
 // Keeps Puja Puzzles working offline once it has been opened.
-const CACHE = 'puja-puzzles-v11';
+const CACHE = 'puja-puzzles-v12';
 const FILES = [
   "./",
   "index.html",
@@ -142,7 +142,7 @@ const FILES = [
   "assets/v-pratham-w30.mp3",
   "assets/v-pratham-w31.mp3",
   "assets/v-pratham-w32v2.mp3",
-  "assets/v-pratham-welcome.mp3",
+  "assets/v-pratham-welcome2.mp3",
   "assets/v-rohan-b01.mp3",
   "assets/v-rohan-b02.mp3",
   "assets/v-rohan-b03.mp3",
@@ -208,7 +208,7 @@ const FILES = [
   "assets/v-rohan-w30.mp3",
   "assets/v-rohan-w31.mp3",
   "assets/v-rohan-w32v2.mp3",
-  "assets/v-rohan-welcome.mp3"
+  "assets/v-rohan-welcome2.mp3"
 ];
 
 self.addEventListener('install', event => {
