@@ -608,7 +608,10 @@ function adopt(d){
   if (d.lang === 'hi' || d.lang === 'en') S.lang = d.lang;
   if (typeof d.voiceName === 'string') S.voiceName = d.voiceName.slice(0, 120);
   if (d.decks && typeof d.decks === 'object') S.decks = d.decks;
-  const at = typeof d.at === 'string' ? SL.findIndex(s => s.id === d.at) : -1;  // by name, so new slides don't shift it
+  if (Number.isInteger(d.qCount)) S.qCount = d.qCount;
+  if (typeof d.qLast === 'string') S.qLast = d.qLast;
+  if (Number.isInteger(d.nameQ)) S.nameQ = d.nameQ;
+  const at =typeof d.at === 'string' ? SL.findIndex(s => s.id === d.at) : -1;  // by name, so new slides don't shift it
   if (at >= 0) S.i = at;
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
@@ -701,8 +704,8 @@ function next(){ go(S.i + 1, 'fwd'); }
 function prev(){ go(S.i - 1, 'back'); }
 function toggle(){ const s = SL[S.i]; if (s.kind !== 'puzzle') return; closeFx(); revealed = !revealed; if (revealed) S.seen[s.id] = 1; hintOn = false; render(revealed ? 'reveal' : 'hint'); }
 function reveal(bless){ const s = SL[S.i]; revealed = true; S.seen[s.id] = 1; hintOn = false; render('reveal'); if (bless) showBlessing(); }
-function judgeRight(){ if (SL[S.i].kind !== 'puzzle' || revealed) return; hideWrong(); reveal(true); }
-function judgeWrong(){ if (SL[S.i].kind !== 'puzzle' || revealed) return; showWrong(); }
+function judgeRight(){ if (SL[S.i].kind !== 'puzzle' || revealed) return; newQuestion(); hideWrong(); reveal(true); }
+function judgeWrong(){ if (SL[S.i].kind !== 'puzzle' || revealed) return; newQuestion(); showWrong(); }
 function primary(){
   const s = SL[S.i];
   if (s.kind === 'puzzle' && !revealed) reveal(false);
@@ -927,20 +930,42 @@ function lipChatter(dur, delay){
 // keep words like हँस-हँस or Wi-Fi on one line
 function setText(el, s){ el.innerHTML = esc(s).replace(/(\S+-\S+)/g, '<span style="white-space:nowrap">$1</span>'); }
 function shuffle(a){ for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+// Lines that name Reshma or Shobhit are spaced out: after one is spoken on a question, Bhagwan doesn't name them
+// again on that question or the next 5 (blessings and wrong answers together).
+const NAMED = /रेशमा|शोभित|Reshma|Shobhit/;
+const named = line => NAMED.test(JSON.stringify(line));
+function newQuestion(){ const id = SL[S.i].id; if (S.qLast !== id) { S.qLast = id; S.qCount = (S.qCount || 0) + 1; } }
+function namesOk(){ return !Number.isInteger(S.nameQ) || (S.qCount || 0) - S.nameQ > 5; }
 // A shuffled deck per kind of line, remembered on the phone, so no line comes back until every other one has been used,
-// even if the app is closed in between. A new deck never starts with the line that was just heard.
-function deal(name, n){
+// even if the app is closed in between. When a new round starts, the last few lines heard go to the back of it.
+function deal(name, list){
+  const n = list.length;
   const decks = (S.decks && typeof S.decks === 'object') ? S.decks : {};
   let d = decks[name];
-  if (!d || d.n !== n || !Array.isArray(d.q)) d = {n, q: [], last: -1};
-  d.q = d.q.filter(i => Number.isInteger(i) && i >= 0 && i < n);
-  if (!d.q.length) { d.q = shuffle(Array.from({length: n}, (_, i) => i)); if (n > 1 && d.q[d.q.length - 1] === d.last) d.q.unshift(d.q.pop()); }
-  const i = d.q.pop(); d.last = i;
+  if (!d || d.n !== n || !Array.isArray(d.q)) d = {n, q: [], recent: []};
+  d.q = d.q.filter((i, k, a) => Number.isInteger(i) && i >= 0 && i < n && a.indexOf(i) === k);
+  d.recent = (Array.isArray(d.recent) ? d.recent : []).filter(i => Number.isInteger(i) && i >= 0 && i < n);
+  const ok = namesOk(), usable = i => ok || !named(list[i]);
+  if (!d.q.some(usable)) {
+    // New round. Name lines still waiting for their turn are shuffled into it.
+    const waiting = new Set(d.q), recent = d.recent.filter(i => !waiting.has(i));
+    const rest = Array.from({length: n}, (_, i) => i).filter(i => !waiting.has(i) && !recent.includes(i));
+    d.q = recent.concat(shuffle(rest.concat(d.q)));
+  }
+  if (!ok) {
+    // Name lines that come up too soon go back to a random spot further down the line instead of piling up.
+    let k = d.q.length - 1;
+    while (k > 0 && !usable(d.q[k])) k--;
+    d.q.splice(k + 1).forEach(x => d.q.splice(Math.floor(Math.random() * d.q.length), 0, x));
+  }
+  const i = d.q.pop();
+  d.recent = d.recent.filter(x => x !== i).concat(i).slice(-10);
+  if (named(list[i])) S.nameQ = S.qCount || 0;
   decks[name] = d; S.decks = decks; save();
   return i;
 }
 function nextWrong(){
-  const i = deal('w', WRONGS.length);
+  const i = deal('w', WRONGS);
   return Object.assign({key: 'w' + String(i + 1).padStart(2, '0')}, WRONGS[i]);
 }
 function fitBubble(ov){
@@ -949,7 +974,7 @@ function fitBubble(ov){
   while (bub.offsetHeight > body.clientHeight - 30 && k > 0.5) { k = Math.round((k - 0.05) * 100) / 100; bub.style.setProperty('--bf', k); }
 }
 function nextBlessing(){
-  const i = deal('b', BLESSINGS.length);
+  const i = deal('b', BLESSINGS);
   return Object.assign({key: 'b' + String(i + 1).padStart(2, '0')}, BLESSINGS[i]);
 }
 const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;

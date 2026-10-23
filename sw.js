@@ -1,5 +1,5 @@
 // Keeps Puja Puzzles working offline once it has been opened.
-const CACHE = 'puja-puzzles-v12';
+const CACHE = 'puja-puzzles-v13';
 const FILES = [
   "./",
   "index.html",
