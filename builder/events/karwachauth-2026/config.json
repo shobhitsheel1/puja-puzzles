@@ -1,0 +1,17 @@
+{
+  "app_title": "Karwa Puzzles",
+  "festival": {"en": "Karwa Chauth", "hi": "करवा चौथ", "hi_title": "शुभ करवा चौथ"},
+  "banner": "KARWA CHAUTH SPECIAL",
+  "hosts": [
+    {"en": "Aditi", "hi": "अदिति", "gender": "f"}
+  ],
+  "character": {"name": "Gauri Maa", "pronoun": "her", "gender": "f", "voices": ["priyamvada"]},
+  "description": "A tap-to-reveal rebus quiz on Karwa Chauth: the vrat, the katha, the moon and solah shringar, with warm-ups, hints and a scoreboard.",
+  "readme_summary": "Six warm-ups, then 38 puzzles on Karwa Chauth: sargi, mehendi, the katha, the moon and more.",
+  "storage_key": "karwachauth-2026-v1",
+  "cache_prefix": "karwachauth-2026-v",
+  "cache_version": 1,
+  "decor": {"garland": "1f3f5-fe0f", "bell": "1f514", "lamp": "1fa94"},
+  "theme": {},
+  "deploy": {"repo": "", "url": ""}
+}
