@@ -1,5 +1,5 @@
 // Keeps Puja Puzzles working offline once it has been opened.
-const CACHE = 'puja-puzzles-v13';
+const CACHE = 'puja-puzzles-v14', PREFIX = 'puja-puzzles-v';
 const FILES = [
   "./",
   "index.html",
@@ -218,8 +218,9 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
+  // Only this app's old versions: other apps on the same github.io address keep their own saved files.
   event.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k.startsWith(PREFIX) && k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 

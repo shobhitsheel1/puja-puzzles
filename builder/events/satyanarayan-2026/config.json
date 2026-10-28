@@ -1,0 +1,18 @@
+{
+  "app_title": "Puja Puzzles",
+  "festival": {"en": "Satyanarayan Puja", "hi": "सत्यनारायण पूजा", "hi_title": "श्री सत्यनारायण पूजा"},
+  "banner": "SATYANARAYAN PUJA SPECIAL",
+  "hosts": [
+    {"en": "Reshma", "hi": "रेशमा", "gender": "f"},
+    {"en": "Shobhit", "hi": "शोभित", "gender": "m"}
+  ],
+  "character": {"name": "Bhagwan", "pronoun": "his", "gender": "m", "voices": ["rohan", "pratham"]},
+  "description": "A tap-to-reveal rebus quiz on Satyanarayan Puja and Hindu mythology, with warm-ups, hints and a scoreboard.",
+  "readme_summary": "Six warm-ups, then 39 puzzles from Satyanarayan Katha, Ramayan, Mahabharat and more.",
+  "storage_key": "puja-puzzles-v1",
+  "cache_prefix": "puja-puzzles-v",
+  "cache_version": 14,
+  "decor": {"garland": "1f3f5-fe0f", "bell": "1f514", "lamp": "1fa94"},
+  "theme": {},
+  "deploy": {"repo": "shobhitsheel1/puja-puzzles", "url": "https://shobhitsheel1.github.io/puja-puzzles/"}
+}
