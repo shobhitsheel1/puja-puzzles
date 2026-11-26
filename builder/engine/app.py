@@ -85,7 +85,7 @@ def slides(ev):
               f'<div class="wl-deva">{fest.get("hi_title", fest["hi"])}</div>'
               f'<div class="wl-div">{R.img(cfg["decor"]["lamp"], 58)}</div>'
               '<div class="sub wl-a">hosted by</div>'
-              f'<div class="big wl-c">{ev.hosts_en}</div>'
+              f'<div class="big wl-c" data-hosts>{ev.hosts_en}</div>'
               f'<div class="wl-tap" data-welcome>{R.img("1f50a", 40)}<span>Tap {ch["name"]} to hear {ch["pronoun"]} welcome</span></div>'
               '</div></div>'),
         footer=f'<div class="deva">{tx["welcome_footer_deva"]}</div>'
@@ -449,6 +449,10 @@ body{height:100%;margin:0;overflow:hidden;color:var(--paper);font-family:var(--f
 .tog[aria-pressed="true"]{background:var(--tulsi);color:#0b3d0b;border-color:var(--tulsi)}
 .seg{display:flex;gap:6px}
 .seg .tog{text-transform:none;letter-spacing:0;font-size:15px;padding:0 12px}
+.hostrow{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.hostrow input{flex:1;min-width:0;height:44px;border-radius:12px;border:2px solid var(--line);background:rgba(0,0,0,.25);color:var(--paper);font:600 16px var(--f-body);padding:0 12px;-webkit-user-select:text;user-select:text}
+.hostrow input::placeholder{color:var(--paper);opacity:.45}
+.hostrow input:focus-visible{outline:3px solid var(--tulsi);outline-offset:1px}
 #voiceSel{flex:0 1 58%;min-width:0;height:42px;border-radius:12px;border:2px solid var(--line);background:#2a0609;color:var(--paper);font:600 16px var(--f-body);padding:0 8px}
 """
 
@@ -466,10 +470,34 @@ const $ = id => document.getElementById(id);
 const E = {pills:$('pills'), prompt:$('prompt'), card:$('card'), content:$('content'), footer:$('footer'),
   bottomText:$('bottomText'), main:$('mainBtn'), prev:$('prevBtn'), next:$('nextBtn'), hint:$('hintBtn'),
   wrong:$('wrongBtn'), right:$('rightBtn'), ans:$('ansBtn'), ansLbl:$('ansLbl'), bless:$('bless'), oops:$('oops')};
-let S = {i:0, seen:{}, players:[], sfx:true, voice:true, lang:'hi', voiceName:''};
+let S = {i:0, seen:{}, players:[], sfx:true, voice:true, lang:'hi', voiceName:'', hosts:[]};
 let revealed = false;  // answers always start hidden; only the ✓ marks are remembered
 let hintOn = false;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// The hosts' names can be changed in the Menu. Lines that name a host then show the new name and, because the
+// recorded clips say the original name, are spoken with the phone's own voice.
+const HOSTS = __HOSTS__;
+function hostName(i, k){ const c = S.hosts && S.hosts[i], v = c && typeof c[k] === 'string' ? c[k].trim() : ''; return v; }
+function hostPair(i){ const h = HOSTS[i], en = hostName(i, 'en') || hostName(i, 'hi'), hi = hostName(i, 'hi') || en; return {en: en || h.en, hi: hi || h.hi}; }
+function hostsEn(){ const n = HOSTS.map((h, i) => hostPair(i).en); return n.length === 1 ? n[0] : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1]; }
+function personal(line){
+  const out = {}; let changed = false;
+  for (const [k, v] of Object.entries(line)) {
+    if (k === 'key' || typeof v !== 'string') { out[k] = v; continue; }
+    let s = v;
+    HOSTS.forEach((h, i) => {
+      const p = hostPair(i);
+      if (h.hi && p.hi !== h.hi) s = s.split(h.hi).join(p.hi);
+      if (h.en && p.en !== h.en) s = s.split(h.en).join(p.en);
+    });
+    if (s !== v) changed = true;
+    out[k] = s;
+  }
+  if (changed) out.key = null;
+  return out;
+}
+function fillHosts(){ document.querySelectorAll('[data-hosts]').forEach(el => { el.textContent = hostsEn(); }); }
 
 function load(){ try { const d = JSON.parse(localStorage.getItem(KEY) || 'null'); if (d && typeof d === 'object') adopt(d); } catch(e) {} }
 function adopt(d){
@@ -481,6 +509,7 @@ function adopt(d){
   if (typeof d.voice === 'boolean') S.voice = d.voice;
   if (d.lang === 'hi' || d.lang === 'en') S.lang = d.lang;
   if (typeof d.voiceName === 'string') S.voiceName = d.voiceName.slice(0, 120);
+  if (Array.isArray(d.hosts)) S.hosts = d.hosts.slice(0, HOSTS.length).map(h => ({en: String((h && h.en) || '').slice(0, 30), hi: String((h && h.hi) || '').slice(0, 30)}));
   if (d.decks && typeof d.decks === 'object') S.decks = d.decks;
   if (Number.isInteger(d.qCount)) S.qCount = d.qCount;
   if (typeof d.qLast === 'string') S.qLast = d.qLast;
@@ -547,7 +576,7 @@ function render(mode){
   const shown = puzzle && revealed;
   E.pills.innerHTML = s.pills.map(p => '<div class="pill ' + p[0] + '">' + p[1] + '</div>').join('');
   E.prompt.innerHTML = puzzle ? (shown ? s.aPrompt : ASK) : s.prompt;
-  if (mode !== 'reveal') E.content.innerHTML = s.id === 'end' ? endBody() : s.body;
+  if (mode !== 'reveal') { E.content.innerHTML = s.id === 'end' ? endBody() : s.body; fillHosts(); }
   E.footer.innerHTML = puzzle ? (shown ? s.aFooter : (hintOn && s.hint ? hintBox(s.hint) : TIPS)) : s.footer;
   E.bottomText.textContent = s.bottom;
   // buttons
@@ -755,7 +784,7 @@ let lipRaf = 0, lipTimer = 0;
 // every copy of the cartoon on the page (the two pop-ups and the welcome card) moves its lips together
 function mouth(m){ document.querySelectorAll('svg.bhag').forEach(s => { if (s.getAttribute('data-m') !== m) s.setAttribute('data-m', m); }); }
 const WELCOME = __WELCOME__, SOUND = __SOUND__;
-function welcome(){ say(WELCOME.hi, WELCOME.en, WELCOME.key); }
+function welcome(){ const w = personal(WELCOME); say(w.hi, w.en, w.key); }
 function lipStop(){ cancelAnimationFrame(lipRaf); clearTimeout(lipTimer); lipRaf = 0; lipTimer = 0; mouth('X'); }
 function lipCues(nat, key){
   const s = LIPS[nat] && LIPS[nat][key], m = s && /^@(\d+)\|(.+)$/.exec(s);
@@ -842,7 +871,7 @@ function deal(name, list){
 }
 function nextWrong(){
   const i = deal('w', WRONGS);
-  return Object.assign({key: 'w' + String(i + 1).padStart(2, '0')}, WRONGS[i]);
+  return personal(Object.assign({key: 'w' + String(i + 1).padStart(2, '0')}, WRONGS[i]));
 }
 function fitBubble(ov){
   const bub = ov.querySelector('.bl-bubble'), body = ov.querySelector('.bl-body');
@@ -851,7 +880,7 @@ function fitBubble(ov){
 }
 function nextBlessing(){
   const i = deal('b', BLESSINGS);
-  return Object.assign({key: 'b' + String(i + 1).padStart(2, '0')}, BLESSINGS[i]);
+  return personal(Object.assign({key: 'b' + String(i + 1).padStart(2, '0')}, BLESSINGS[i]));
 }
 const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function petals(){
@@ -917,8 +946,17 @@ function closeFx(){ hideBless(); hideWrong(); }
 function drawSettings(){
   [['sfxTog', S.sfx], ['voiceTog', S.voice]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'On' : 'Off'; });
   $('langHi').setAttribute('aria-pressed', String(S.lang === 'hi')); $('langEn').setAttribute('aria-pressed', String(S.lang === 'en'));
+  HOSTS.forEach((h, i) => ['en', 'hi'].forEach(k => { const el = $('host' + k + i); if (el && document.activeElement !== el) el.value = hostName(i, k); }));
   drawVoices();
 }
+HOSTS.forEach((h, i) => ['en', 'hi'].forEach(k => {
+  const el = $('host' + k + i); if (!el) return;
+  el.addEventListener('input', () => {
+    const list = HOSTS.map((x, j) => ({en: hostName(j, 'en'), hi: hostName(j, 'hi')}));
+    list[i][k] = el.value.slice(0, 30); S.hosts = list; save(); fillHosts(); fit();
+  });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
+}));
 function drawVoices(){
   const sel = $('voiceSel'), list = usable();
   const hi = list.filter(v => HI.test(v.lang)), inEn = list.filter(v => EN_IN.test(v.lang)), other = list.filter(v => /^en/i.test(v.lang) && !EN_IN.test(v.lang));
@@ -1013,6 +1051,12 @@ def build(ev, out):
     toran_land = toran(1920, 31, 42, (56, 1864), lambda x: x < 110 or x > 1810, "tl", decor["garland"], decor["bell"])
     theme = "".join(f"{k}:{v};" for k, v in cfg.get("theme", {}).items())
     css = CSS + (":root{" + theme + "}\n" if theme else "")
+    def host_row(i, h):
+        return (f'<div class="hostrow"><input id="hosten{i}" type="text" maxlength="30" autocomplete="off" enterkeyhint="done" '
+                f'placeholder="{h["en"]}" aria-label="Host name, in English (now {h["en"]})">'
+                f'<input id="hosthi{i}" type="text" maxlength="30" autocomplete="off" enterkeyhint="done" lang="hi" '
+                f'placeholder="{h["hi"]}" aria-label="Host name, in Hindi (now {h["hi"]})"></div>')
+    host_rows = "".join(host_row(i, h) for i, h in enumerate(ev.hosts))
     page = f"""<title>{cfg['app_title']}</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1071,6 +1115,9 @@ def build(ev, out):
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="gridTitle">
     <div class="ph"><h2 id="gridTitle">Menu</h2><button class="x" data-close aria-label="Close">×</button></div>
     <div id="gridBody"></div>
+    <div class="sec">{'Hosts' if len(ev.hosts) > 1 else 'Host'}</div>
+    {host_rows}
+    <p class="note">{ch['name']} uses {'these names' if len(ev.hosts) > 1 else 'this name'} on the welcome card and in {ch['pronoun']} jokes. Leave a box empty to keep {ev.hosts_en}. Lines with a new name are spoken in the phone's own voice.</p>
     <div class="sec">Sound</div>
     <div class="setrow"><span class="sl">Bell and buzzer</span><button class="tog" id="sfxTog" aria-pressed="true">On</button></div>
     <div class="setrow"><span class="sl">{ch['name']}'s voice for blessings</span><button class="tog" id="voiceTog" aria-pressed="true">On</button></div>
@@ -1114,7 +1161,8 @@ def build(ev, out):
                 .replace("__WELCOME__", js_str(c.WELCOME)).replace("__SOUND__", js_str(sound))
                 .replace("__KEY__", js_str(cfg["storage_key"])).replace("__PREFER__", js_str(ch.get("gender", "m")))
                 .replace("__NATURAL__", js_str(nat)).replace("__NAT_LABEL__", js_str(nat_label))
-                .replace("__NAMED__", named))
+                .replace("__NAMED__", named)
+                .replace("__HOSTS__", js_str([{"en": h["en"], "hi": h["hi"]} for h in ev.hosts])))
     leftover = re.findall(r"__[A-Z_]+__", page)
     assert not leftover, leftover
     out = Path(out)

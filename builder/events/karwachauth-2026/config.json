@@ -10,7 +10,7 @@
   "readme_summary": "Six warm-ups, then 38 puzzles on Karwa Chauth: sargi, mehendi, the katha, the moon and more.",
   "storage_key": "karwachauth-2026-v1",
   "cache_prefix": "karwachauth-2026-v",
-  "cache_version": 1,
+  "cache_version": 2,
   "decor": {"garland": "1f3f5-fe0f", "bell": "1f514", "lamp": "1fa94"},
   "theme": {},
   "deploy": {"repo": "shobhitsheel1/karwachauth", "url": "https://shobhitsheel1.github.io/karwachauth/"}
