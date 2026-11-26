@@ -39,9 +39,10 @@ if ! ls rhubarb/x/*/rhubarb >/dev/null 2>&1; then
   chmod +x rhubarb/x/*/rhubarb
 fi
 
-python3 -c "import sherpa_onnx, numpy, PIL, playwright" 2>/dev/null || \
-  pip install --quiet --break-system-packages sherpa-onnx numpy pillow playwright || \
-  pip install --quiet sherpa-onnx numpy pillow playwright
+# sherpa-onnx 2.x dropped espeak-ng, which the Hindi voices need to read Devanagari: stay on the last 1.x release.
+python3 -c "import sherpa_onnx, numpy, PIL, playwright; assert sherpa_onnx.__version__.startswith('1.')" 2>/dev/null || \
+  pip install --quiet --break-system-packages "sherpa-onnx==1.13.8" numpy pillow playwright || \
+  pip install --quiet "sherpa-onnx==1.13.8" numpy pillow playwright
 python3 - <<'EOF' || python3 -m playwright install chromium
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:

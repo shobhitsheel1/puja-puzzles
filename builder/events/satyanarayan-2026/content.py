@@ -1,4 +1,4 @@
-"""Satyanarayan Puja (Reshma and Shobhit, 2026): the puzzles, Bhagwan's lines and screen texts.
+"""Satyanarayan Puja: the puzzles, Bhagwan's lines and screen texts.
 
 A new event copies this file and replaces everything with puzzles and lines made for its own festival.
 """
@@ -408,6 +408,9 @@ PUZZLES = [
 # Spoken by the natural Hindi voice (the *_hi text); *_en is the subtitle and the English-mode text.
 # A line that is re-worded after its clip was recorded gets a new "key" (like b26v2) so phones never
 # play the old recording.
+# Lines with a "host" version switch to it when someone types the hosts' names in the app's Menu: {H} is one host
+# (taking turns), {HOSTS} is all of them ("Asha और Ravi"). Keep names at a pause (start of a sentence, or after a
+# comma) and the Hindi free of verbs that agree with the host's gender, so any names fit.
 
 BLESSINGS = [
     {"open_hi": "सही बोला बेटा! तुमने तो कमाल कर दिया!", "open_en": "Right you are, child! You've done wonders!", "hi": "मैं तुम्हें तेज़ दिमाग़ और खुश दिल का आशीर्वाद देता हूँ।", "en": "I bless you with a sharp mind and a happy heart.", "close_hi": "तथास्तु!", "close_en": "Tathastu!"},
@@ -432,14 +435,19 @@ BLESSINGS = [
     {"open_hi": "सही बोला बेटा! तीनों लोकों में तुम्हारी चर्चा होगी!", "open_en": "Right you are, child! All three worlds will be talking about you!", "hi": "तुम में हमेशा दिवाली वाले बच्चे जैसी ऊर्जा बनी रहे!", "en": "May you always have the energy of a child on Diwali!", "close_hi": "जय हो!", "close_en": "Jai ho!"},
     {"open_hi": "सही बोला! तुम तो पूरे ज्ञानी निकले!", "open_en": "Spot on! You turned out to be a true sage!", "hi": "तुम्हारी चाबियाँ फिर कभी न खोएँ!", "en": "May you never lose your keys again!", "close_hi": "तथास्तु!", "close_en": "Tathastu!"},
     {"open_hi": "जय हो! सही बोला बेटा, तुम तो मेरे सबसे होशियार भक्त निकले!", "open_en": "Jai ho! Right you are, child, you're my smartest devotee!", "hi": "तुम्हें जीनियस का दिमाग़ और संत का दिल मिले।", "en": "May you have the brain of a genius and the heart of a saint.", "close_hi": "मेरा आशीर्वाद सदा तुम्हारे साथ है!", "close_en": "My blessings are always with you!"},
-    # the hosts, Reshma and Shobhit, get roped in
-    {"open_hi": "सही बोला बेटा! वाह, क्या बात है!", "open_en": "Right you are, child! Wah, wonderful!", "hi": "मैं रेशमा को बोलता हूँ, तुम्हें डबल प्रसाद दे दे!", "en": "I'll tell Reshma to give you double prasad!", "close_hi": "जाओ, प्रसाद लो!", "close_en": "Go get your prasad!"},
-    {"open_hi": "एकदम सही बोला! शाबाश!", "open_en": "Exactly right! Shabash!", "hi": "शोभित, इस भक्त को आज एक्स्ट्रा लड्डू देना, ये मेरा आदेश है!", "en": "Shobhit, give this devotee extra laddoos today. That's my order!", "close_hi": "तथास्तु!", "close_en": "Tathastu!"},
-    {"open_hi": "सही बोला बेटा! रेशमा और शोभित की पूजा सफल हो गई!", "open_en": "Right you are, child! Reshma and Shobhit's puja is a success!", "hi": "रेशमा और शोभित की तरफ़ से डबल प्रसाद, और मेरी तरफ़ से डबल आशीर्वाद!", "en": "Double prasad from Reshma and Shobhit, and double blessings from me!", "close_hi": "जय हो!", "close_en": "Jai ho!"},
+    # lines that can name the hosts (see "host" above)
+    {"key": "b23v2", "open_hi": "सही बोला बेटा! वाह, क्या बात है!", "open_en": "Right you are, child! Wah, wonderful!", "hi": "आज तो तुम्हें डबल प्रसाद मिलना चाहिए!", "en": "You deserve double prasad today!", "close_hi": "जाओ, प्रसाद लो!", "close_en": "Go get your prasad!",
+     "host": {"key": "b23h", "hi": "{H}, इस भक्त को डबल प्रसाद देना!", "en": "{H}, give this devotee double prasad!"}},
+    {"key": "b24v2", "open_hi": "एकदम सही बोला! शाबाश!", "open_en": "Exactly right! Shabash!", "hi": "आज इस भक्त को एक्स्ट्रा लड्डू मिलेंगे, ये मेरा आदेश है!", "en": "This devotee gets extra laddoos today. That's my order!", "close_hi": "तथास्तु!", "close_en": "Tathastu!",
+     "host": {"key": "b24h", "hi": "{H}, इस भक्त को आज एक्स्ट्रा लड्डू देना, ये मेरा आदेश है!", "en": "{H}, give this devotee extra laddoos today. That's my order!"}},
+    {"key": "b25v2", "open_hi": "सही बोला बेटा! आज की पूजा सफल हो गई!", "open_en": "Right you are, child! Today's puja is a success!", "hi": "तुम्हें डबल प्रसाद, और मेरी तरफ़ से डबल आशीर्वाद!", "en": "Double prasad for you, and double blessings from me!", "close_hi": "जय हो!", "close_en": "Jai ho!",
+     "host": {"key": "b25h", "hi": "{HOSTS}, इस भक्त को डबल प्रसाद दो! और मेरी तरफ़ से डबल आशीर्वाद!", "en": "{HOSTS}, give this devotee double prasad! And double blessings from me!"}},
     {"key": "b26v2", "open_hi": "सही पकड़े हो! देखो, ऐसे होते हैं असली भक्त!", "open_en": "You got it! See, that's what a true devotee looks like!", "hi": "तुम्हें हर पूजा में सबसे आगे वाली सीट मिले!", "en": "May you always get a front-row seat at every puja!", "close_hi": "मौज करो!", "close_en": "Enjoy!"},
-    {"open_hi": "सही बोला वत्स! मैं बहुत प्रसन्न हुआ!", "open_en": "Right you are, my child! I am very pleased!", "hi": "रेशमा, इसे पंचामृत की पहली कटोरी देना!", "en": "Reshma, give this one the first bowl of panchamrit!", "close_hi": "तथास्तु!", "close_en": "Tathastu!"},
+    {"key": "b27v2", "open_hi": "सही बोला वत्स! मैं बहुत प्रसन्न हुआ!", "open_en": "Right you are, my child! I am very pleased!", "hi": "पंचामृत की पहली कटोरी तुम्हारी!", "en": "The first bowl of panchamrit is yours!", "close_hi": "तथास्तु!", "close_en": "Tathastu!",
+     "host": {"key": "b27h", "hi": "{H}, इसे पंचामृत की पहली कटोरी देना!", "en": "{H}, give this one the first bowl of panchamrit!"}},
     {"key": "b28v2", "open_hi": "वाह बेटा, बिल्कुल सही जवाब!", "open_en": "Wah, child, absolutely right!", "hi": "इस घर में हमेशा तुम्हारे जैसे होशियार मेहमान आते रहें!", "en": "May this home always be full of clever guests like you!", "close_hi": "कल्याण हो!", "close_en": "Bless you!"},
-    {"key": "b29v2", "open_hi": "सही बोला बेटा! सब लोग ज़ोर से ताली बजाओ!", "open_en": "Right you are, child! Everyone, a big round of applause!", "hi": "मैं शोभित को बोलता हूँ, अगली पूजा का पहला न्योता तुम्हें ही भेजे!", "en": "I'll tell Shobhit to send you the very first invite to the next puja!", "close_hi": "जाओ, मौज करो!", "close_en": "Now go and have fun!"},
+    {"key": "b29v3", "open_hi": "सही बोला बेटा! सब लोग ज़ोर से ताली बजाओ!", "open_en": "Right you are, child! Everyone, a big round of applause!", "hi": "अगली पूजा का पहला न्योता तुम्हें ही मिले!", "en": "May the very first invite to the next puja come to you!", "close_hi": "जाओ, मौज करो!", "close_en": "Now go and have fun!",
+     "host": {"key": "b29h", "hi": "{H}, अगली पूजा का पहला न्योता इसी भक्त को भेजना!", "en": "{H}, send the very first invite to the next puja to this devotee!"}},
     {"key": "b30v2", "open_hi": "बिल्कुल सही! सबने सुना?", "open_en": "Absolutely right! Did everyone hear that?", "hi": "इस भक्त को प्रसाद के साथ एक्स्ट्रा हलवा भी मिलना चाहिए!", "en": "This devotee deserves extra halwa with the prasad!", "close_hi": "तथास्तु!", "close_en": "Tathastu!"},
 ]
 
@@ -456,15 +464,21 @@ WRONGS = [
     {"hi": "तुम्हारी तपस्या अभी अधूरी है, फिर से कोशिश करो!", "en": "Your penance is not complete yet. Try again!"},
     {"hi": "ये जवाब तो लड्डू की तरह गोल-मोल है! फिर से सोचो।", "en": "That answer is as round and wobbly as a laddoo! Think again."},
     {"hi": "अरे बेटा, गरुड़ जी को भेजूँ? तुम्हारा दिमाग़ ढूँढकर ले आएँगे!", "en": "Shall I send Garuda to go and find your brain?"},
-    {"hi": "अरे बेटा! ऐसे जवाब दोगे तो रेशमा प्रसाद आधा कर देगी!", "en": "Answers like that, child, and Reshma will cut your prasad in half!"},
-    {"hi": "शोभित, इस भक्त को एक लड्डू और खिलाओ, शायद दिमाग़ चल पड़े!", "en": "Shobhit, feed this devotee one more laddoo. Maybe the brain will start working!"},
-    {"hi": "अरे बेटा शोभित, इसकी क्लासेस लगाओ! पहेली की ट्यूशन ज़रूरी है।", "en": "Shobhit beta, give this one some classes! Puzzle tuition is a must."},
+    {"key": "w13v2", "hi": "अरे बेटा! ऐसे जवाब दोगे तो प्रसाद आधा हो जाएगा!", "en": "Answers like that, child, and your prasad gets cut in half!",
+     "host": {"key": "w13h", "hi": "{H}, ऐसे जवाब पर तो इसका प्रसाद आधा कर दो!", "en": "{H}, for an answer like that, cut this one's prasad in half!"}},
+    {"key": "w14v2", "hi": "कोई इस भक्त को एक लड्डू और खिलाओ, शायद दिमाग़ चल पड़े!", "en": "Someone feed this devotee one more laddoo. Maybe the brain will start working!",
+     "host": {"key": "w14h", "hi": "{H}, इस भक्त को एक लड्डू और खिलाओ, शायद दिमाग़ चल पड़े!", "en": "{H}, feed this devotee one more laddoo. Maybe the brain will start working!"}},
+    {"key": "w15v2", "hi": "अरे बेटा, तुम्हारी क्लासेस लगानी पड़ेंगी! पहेली की ट्यूशन ज़रूरी है।", "en": "Oh child, you'll need some classes! Puzzle tuition is a must.",
+     "host": {"key": "w15h", "hi": "अरे बेटा {H}, इसकी क्लासेस लगाओ! पहेली की ट्यूशन ज़रूरी है।", "en": "{H} beta, give this one some classes! Puzzle tuition is a must."}},
     {"key": "w16v2", "hi": "इसका प्रसाद तब तक रुका रहेगा, जब तक सही जवाब न आए!", "en": "No prasad for this one until the right answer comes!"},
     {"key": "w17v2", "hi": "ज़रा अपना वाई-फ़ाई चेक करो, दिमाग़ से कनेक्शन टूट गया है!", "en": "Check your Wi-Fi, child. The connection to your brain is down!"},
-    {"hi": "रेशमा, एक कप कड़क चाय लाओ, इस भक्त का दिमाग़ जगाना पड़ेगा!", "en": "Reshma, bring a cup of strong chai. This devotee's brain needs waking up!"},
-    {"hi": "अरे वत्स, रेशमा और शोभित ने इतनी मेहनत से पूजा रखी, और तुम ऐसा जवाब दे रहे हो?", "en": "Reshma and Shobhit worked so hard on this puja, and you give an answer like that?"},
+    {"key": "w18v2", "hi": "कोई एक कप कड़क चाय लाओ, इस भक्त का दिमाग़ जगाना पड़ेगा!", "en": "Someone bring a cup of strong chai. This devotee's brain needs waking up!",
+     "host": {"key": "w18h", "hi": "{H}, एक कप कड़क चाय लाओ, इस भक्त का दिमाग़ जगाना पड़ेगा!", "en": "{H}, bring a cup of strong chai. This devotee's brain needs waking up!"}},
+    {"key": "w19v2", "hi": "अरे वत्स, इतनी मेहनत से ये पूजा रखी गई, और तुम ऐसा जवाब दे रहे हो?", "en": "So much effort went into this puja, and you give an answer like that?",
+     "host": {"key": "w19h", "hi": "{HOSTS}, देखो! आपकी पूजा में ये भक्त कैसे जवाब दे रहा है!", "en": "{HOSTS}, look! See how this devotee answers at your puja!"}},
     {"key": "w20v2", "hi": "पीछे वाली लाइन में जाकर बैठो, आगे की सीट होशियार भक्तों के लिए है!", "en": "Off you go to the back row! The front seats are for clever devotees."},
-    {"hi": "रेशमा, इसके पंचामृत में थोड़े बादाम ज़्यादा डालना, याददाश्त के लिए!", "en": "Reshma, put a few extra almonds in this one's panchamrit, for the memory!"},
+    {"key": "w21v2", "hi": "इस भक्त के पंचामृत में थोड़े बादाम ज़्यादा डालो, याददाश्त के लिए!", "en": "Put a few extra almonds in this devotee's panchamrit, for the memory!",
+     "host": {"key": "w21h", "hi": "{H}, इसके पंचामृत में थोड़े बादाम ज़्यादा डालना, याददाश्त के लिए!", "en": "{H}, put a few extra almonds in this one's panchamrit, for the memory!"}},
     {"hi": "हे भक्त, ये जवाब सुनकर मेरे शंख की आवाज़ भी बैठ गई!", "en": "Devotee, that answer made even my conch lose its voice!"},
     {"hi": "बेटा, ये पहेली है, अंताक्षरी नहीं! फिर से सोचो।", "en": "Child, this is a puzzle, not antakshari! Think again."},
     {"hi": "अरे वत्स, गलत! गणेश जी ने तो अपना लड्डू तक नीचे रख दिया!", "en": "Wrong, my child! Ganesh ji has even put down his laddoo!"},
@@ -479,8 +493,10 @@ WRONGS = [
 ]
 
 # Spoken when someone taps the cartoon on the welcome screen.
-WELCOME = {"key": "welcome2", "hi": "सत्यनारायण पूजा में आप सबका स्वागत है! इस पूजा के यजमान हैं, रेशमा और शोभित। चलो, पहेलियाँ शुरू करते हैं!",
-           "en": "Welcome to the Satyanarayan Puja, hosted by Reshma and Shobhit! Come, let's start the puzzles!"}
+WELCOME = {"key": "welcome3", "hi": "सत्यनारायण पूजा में आप सबका स्वागत है! चलो, पहेलियाँ शुरू करते हैं!",
+           "en": "Welcome to the Satyanarayan Puja! Come, let's start the puzzles!",
+           "host": {"key": "welcomeh", "hi": "सत्यनारायण पूजा में आप सबका स्वागत है! इस पूजा के यजमान हैं, {HOSTS}। चलो, पहेलियाँ शुरू करते हैं!",
+                    "en": "Welcome to the Satyanarayan Puja, hosted by {HOSTS}! Come, let's start the puzzles!"}}
 
 # Words on the screens that depend on the festival.
 TEXTS = {

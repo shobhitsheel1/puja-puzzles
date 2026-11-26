@@ -23,7 +23,10 @@ python3 checks/check.py events/satyanarayan-2026
    name, pronoun, gender and voices (`rohan`, `pratham` male; `priyamvada` female), a new `storage_key` and
    `cache_prefix` (apps on the same github.io address must not share them), decorations, optional theme colours.
 3. `content.py`: new warm-ups and puzzles about this festival, new blessings and wrong-answer lines in the
-   cartoon's voice (with a few host jokes), the spoken welcome and the screen texts.
+   cartoon's voice, the spoken welcome and the screen texts. To make an app anyone can personalise, leave
+   `hosts` empty and give the lines that joke about the hosts a `"host"` version with `{H}` (one host) or `{HOSTS}`
+   (all of them): the app then shows a Hosts box in its Menu, and the voice says typed names from the spoken name
+   bank (`engine/namebank.py`, recorded per voice with `build.py --names`), or "यजमान जी" for names it doesn't know.
 4. `deity.py`: a new cartoon for the festival, drawn with the hooks in `engine/face.py` (eyes, 9 mouths, float).
 5. `python3 build.py events/<slug> --all` records the voice, times the lips and builds both versions.
 6. Review: `checks/cartoon.py`, `checks/cards.py` (look at every sheet), `checks/asr.py`, `checks/check.py`.
@@ -41,9 +44,11 @@ engine/             festival-agnostic code
   voice.py          records lines with Piper Hindi voices via sherpa-onnx (only missing clips)
   lips.py           Rhubarb Lip Sync timings for every clip
   face.py           the 9 talking mouths and the hooks a cartoon must have
+  namebank.py       ~660 names the voice can say (first names, surnames, family words), packed per voice
   kit.py            building blocks for puzzle pictures (emoji, words, 3D letters, rows...)
   event.py          loads an event folder
 events/<slug>/      config.json, content.py, deity.py, voice/*.mp3, lips.json
+namebank/           the recorded name packs, <voice>.mp3 + <voice>.json
 checks/             check.py (play-tests), cards.py (puzzle sheets), cartoon.py (face sheet), asr.py (voice)
 ```
 

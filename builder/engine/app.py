@@ -9,7 +9,8 @@ import shutil
 from pathlib import Path
 
 import common as R
-from event import VOICE_INFO
+import namebank
+from event import VOICE_INFO, host_seq, host_version
 
 
 # ------------------------------------------------------------------ decorations
@@ -77,16 +78,17 @@ def slides(ev):
         id="welcome", kind="intro", tile="Welcome", group="start",
         pills=[["num", pill]],
         prompt=outl("WELCOME!", "gold", 110),
-        body=('<div class="wl">'
+        body=(f'<div class="wl{"" if ev.hosts else " nohosts"}">'
               f'<div class="wl-god" data-welcome role="button" aria-label="Hear {ch['name']}\'s welcome">{ev.svg(idp="wg")}</div>'
               '<div class="wl-txt">'
               '<div class="sub wl-a">Welcome to the</div>'
               f'<div class="big wl-b">{fest["en"]}</div>'
               f'<div class="wl-deva">{fest.get("hi_title", fest["hi"])}</div>'
               f'<div class="wl-div">{R.img(cfg["decor"]["lamp"], 58)}</div>'
-              '<div class="sub wl-a">hosted by</div>'
-              f'<div class="big wl-c" data-hosts>{ev.hosts_en}</div>'
-              f'<div class="wl-tap" data-welcome>{R.img("1f50a", 40)}<span>Tap {ch["name"]} to hear {ch["pronoun"]} welcome</span></div>'
+              '<div class="sub wl-a wl-hb">hosted by</div>'
+              f'<div class="big wl-c wl-hosts"{" data-hosts" if ev.hosts and not ev.hostable else ""}>{ev.hosts_en}</div>'
+              + ('<button class="wl-add" type="button" data-addhosts>+ Add the hosts\' names</button>' if ev.hostable else '')
+              + f'<div class="wl-tap" data-welcome>{R.img("1f50a", 40)}<span>Tap {ch["name"]} to hear {ch["pronoun"]} welcome</span></div>'
               '</div></div>'),
         footer=f'<div class="deva">{tx["welcome_footer_deva"]}</div>'
                f'<div class="exp">{tx["welcome_footer_en"]}</div>',
@@ -274,6 +276,10 @@ body{height:100%;margin:0;overflow:hidden;color:var(--paper);font-family:var(--f
 .wl-div::after{background:linear-gradient(90deg,#FF8F1F,rgba(255,143,31,0))}
 .wl-c{font-size:88px;line-height:1.08;color:var(--sindoor)}
 .wl-tap{display:flex;align-items:center;gap:10px;margin-top:30px;font-weight:600;font-size:28px;color:#6b6b6b;cursor:pointer}
+.wl-add{margin-top:22px;height:60px;border-radius:30px;border:3px dashed #E2412E;background:#fff6ec;color:#B3261E;font:800 27px var(--f-body);padding:0 28px;cursor:pointer}
+.wl.nohosts .wl-hb,.wl.nohosts .wl-hosts{display:none}
+.wl:not(.nohosts) .wl-add{display:none}
+#hostNote b{color:var(--paper)}
 .sub{font-weight:600;color:#444;text-align:center}
 .chips{display:flex;gap:12px;justify-content:center}
 .chip{font-weight:800;font-size:30px;padding:9px 24px;border-radius:999px;color:var(--paper);white-space:nowrap}
@@ -477,16 +483,16 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 
 // The hosts' names can be changed in the Menu. Lines that name a host then show the new name and, because the
 // recorded clips say the original name, are spoken with the phone's own voice.
-const HOSTS = __HOSTS__;
+const CFG_HOSTS = __HOSTS__;
 function hostName(i, k){ const c = S.hosts && S.hosts[i], v = c && typeof c[k] === 'string' ? c[k].trim() : ''; return v; }
-function hostPair(i){ const h = HOSTS[i], en = hostName(i, 'en') || hostName(i, 'hi'), hi = hostName(i, 'hi') || en; return {en: en || h.en, hi: hi || h.hi}; }
-function hostsEn(){ const n = HOSTS.map((h, i) => hostPair(i).en); return n.length === 1 ? n[0] : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1]; }
+function hostPair(i){ const h = CFG_HOSTS[i], en = hostName(i, 'en') || hostName(i, 'hi'), hi = hostName(i, 'hi') || en; return {en: en || h.en, hi: hi || h.hi}; }
+function hostsEn(){ const n = CFG_HOSTS.map((h, i) => hostPair(i).en); return !n.length ? '' : n.length === 1 ? n[0] : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1]; }
 function personal(line){
   const out = {}; let changed = false;
   for (const [k, v] of Object.entries(line)) {
     if (k === 'key' || typeof v !== 'string') { out[k] = v; continue; }
     let s = v;
-    HOSTS.forEach((h, i) => {
+    CFG_HOSTS.forEach((h, i) => {
       const p = hostPair(i);
       if (h.hi && p.hi !== h.hi) s = s.split(h.hi).join(p.hi);
       if (h.en && p.en !== h.en) s = s.split(h.en).join(p.en);
@@ -509,11 +515,13 @@ function adopt(d){
   if (typeof d.voice === 'boolean') S.voice = d.voice;
   if (d.lang === 'hi' || d.lang === 'en') S.lang = d.lang;
   if (typeof d.voiceName === 'string') S.voiceName = d.voiceName.slice(0, 120);
-  if (Array.isArray(d.hosts)) S.hosts = d.hosts.slice(0, HOSTS.length).map(h => ({en: String((h && h.en) || '').slice(0, 30), hi: String((h && h.hi) || '').slice(0, 30)}));
+  if (Array.isArray(d.hosts)) S.hosts = d.hosts.slice(0, CFG_HOSTS.length).map(h => ({en: String((h && h.en) || '').slice(0, 30), hi: String((h && h.hi) || '').slice(0, 30)}));
   if (d.decks && typeof d.decks === 'object') S.decks = d.decks;
   if (Number.isInteger(d.qCount)) S.qCount = d.qCount;
   if (typeof d.qLast === 'string') S.qLast = d.qLast;
   if (Number.isInteger(d.nameQ)) S.nameQ = d.nameQ;
+  if (typeof d.hostText === 'string') S.hostText = d.hostText.slice(0, 80);
+  if (Number.isInteger(d.hostTurn)) S.hostTurn = d.hostTurn;
   const at =typeof d.at === 'string' ? SL.findIndex(s => s.id === d.at) : -1;  // by name, so new slides don't shift it
   if (at >= 0) S.i = at;
 }
@@ -594,6 +602,7 @@ function render(mode){
   E.hint.disabled = !(puzzle && !shown && s.hint);
   E.hint.classList.toggle('on', hintOn && !E.hint.disabled);
   E.hint.setAttribute('aria-pressed', String(hintOn && !E.hint.disabled));
+  if (s.id === 'welcome' && mode !== 'reveal') fillWelcome();
   fit();
   S.at = s.id;
   if (mode === 'reveal') { anim(E.prompt, 'in-pop'); anim(E.footer, 'in-rise'); }
@@ -735,9 +744,15 @@ function preloadClips(){
   const nat = naturalVoice(); if (!nat) return;
   const keys = (list, p) => list.map((x, i) => x.key || p + String(i + 1).padStart(2, '0'));  // a re-worded line gets a new key
   [WELCOME.key, 'tath', 'sample', 'test'].concat(keys(WRONGS, 'w'), keys(BLESSINGS, 'b')).forEach(k => clip(k, nat));
+  BLESSINGS.concat(WRONGS, [WELCOME]).forEach(l => { if (l.host) l.host.seq.forEach(([k, v]) => { if (k === 'say') clip(v, nat); }); });
+  if (hostsOn()) ['_and', '_yajman'].concat(...HOSTS.filter(h => h.say).map(h => h.say)).forEach(w => bankWord(nat, w));
 }
-let voiceSrc = null, sayId = 0;
-function stopClip(){ try { if (voiceSrc) voiceSrc.stop(); } catch(e) {} voiceSrc = null; }
+let voiceSrc = null, voiceSrcs = [], sayId = 0;
+function stopClip(){
+  try { if (voiceSrc) voiceSrc.stop(); } catch(e) {}
+  voiceSrcs.forEach(x => { try { x.stop(); } catch(e) {} });
+  voiceSrc = null; voiceSrcs = [];
+}
 function estimate(hi, en){ return Math.max(2, ((naturalVoice() || S.lang === 'hi') ? hi : en).length * 0.075); }
 function say(hi, en, key){
   if (!S.voice) return Promise.resolve(0);
@@ -784,14 +799,154 @@ let lipRaf = 0, lipTimer = 0;
 // every copy of the cartoon on the page (the two pop-ups and the welcome card) moves its lips together
 function mouth(m){ document.querySelectorAll('svg.bhag').forEach(s => { if (s.getAttribute('data-m') !== m) s.setAttribute('data-m', m); }); }
 const WELCOME = __WELCOME__, SOUND = __SOUND__;
-function welcome(){ const w = personal(WELCOME); say(w.hi, w.en, w.key); }
+function welcome(){ const w = resolve(personal(WELCOME)); voiceLine(w.hi, w.en, w); }
+// a line that names the hosts is stitched together; any other line is one recording
+function voiceLine(hi, en, line){ return line.seq ? sayHost(hi, en, line.seq, line.who) : say(hi, en, line.key); }
+
+// ---------------- hosts: names typed in the Menu make the cartoon welcome and tease the hosts by name
+const HOSTABLE = __HOSTABLE__, DEFAULT_HOSTS = __DEFAULT_HOSTS__, CH = __CH__;
+// Names the natural voice can say, recorded in advance: [Devanagari, English, [spelling keys]]. For any other name
+// the voice says "यजमान जी" while the screen shows the name as typed.
+const NAMEBANK = __NAMEBANK__, BANK_KEY = {}, BANK_DEVA = {};
+NAMEBANK.forEach((r, i) => { BANK_DEVA[r[0]] = i; r[2].forEach(k => { BANK_KEY[k] = i; }); });
+// spelling-insensitive key, kept identical to key() in engine/namebank.py
+function nameKey(s){
+  s = String(s).toLowerCase().replace(/[^a-z]/g, '');
+  [['x', 'ks'], ['ph', 'f'], ['sh', 's'], ['w', 'v'], ['q', 'k'], ['z', 'j']].forEach(([a, b]) => { s = s.split(a).join(b); });
+  s = s.replace(/([kgcjtdpb])h/g, '$1');
+  [['ee', 'i'], ['oo', 'u'], ['aa', 'a'], ['ii', 'i'], ['uu', 'u']].forEach(([a, b]) => { s = s.split(a).join(b); });
+  return s.replace(/([^aeiou])\1+/g, '$1');
+}
+function hostText(){ return typeof S.hostText === 'string' ? S.hostText : DEFAULT_HOSTS; }
+function parseHosts(text){
+  return String(text || '').split(/\s*(?:,|&|\+|\/|\band\b|और)\s*/i).map(x => x.trim()).filter(Boolean).slice(0, 4).map(name => {
+    const toks = name.split(/\s+/), hiT = [], said = [];
+    toks.forEach(t => {
+      const r = /[\u0900-\u097F]/.test(t) ? BANK_DEVA[t.replace(/[\u200c\u200d]/g, '')] : BANK_KEY[nameKey(t)];
+      if (r !== undefined) { hiT.push(NAMEBANK[r][0]); said.push(NAMEBANK[r][0]); } else hiT.push(t);
+    });
+    const en = toks.map(t => /[a-z]/i.test(t) ? t.charAt(0).toUpperCase() + t.slice(1)
+      : (BANK_DEVA[t] !== undefined ? NAMEBANK[BANK_DEVA[t]][1] : t)).join(' ');
+    // the voice says a name only when it knows the first word; unknown extra words are left out
+    return {en, hi: hiT.join(' '), say: said.length && hiT[0] === said[0] ? said : null};
+  });
+}
+let HOSTS = [];
+function setHosts(){ HOSTS = HOSTABLE ? parseHosts(hostText()) : []; }
+function hostsOn(){ return HOSTS.length > 0; }
+function joinNames(list, lang){
+  if (list.length < 2) return list.join('');
+  return list.slice(0, -1).join(', ') + (lang === 'hi' ? ' और ' : ' and ') + list[list.length - 1];
+}
+function nextHost(){ S.hostTurn = ((S.hostTurn || 0) + 1) % HOSTS.length; return HOSTS[S.hostTurn]; }
+// The line as it will be shown and said: once the hosts are known, its host version with their names filled in.
+function resolve(line){
+  if (!hostsOn() || !line.host) return line;
+  const v = Object.assign({}, line, line.host), who = nextHost();
+  const fill = (s, lang) => typeof s === 'string'
+    ? s.replace(/\{HOSTS\}/g, joinNames(HOSTS.map(h => h[lang]), lang)).replace(/\{H\}/g, who[lang]) : s;
+  ['open_hi', 'hi', 'close_hi'].forEach(k => { v[k] = fill(v[k], 'hi'); });
+  ['open_en', 'en', 'close_en'].forEach(k => { v[k] = fill(v[k], 'en'); });
+  delete v.host; v.who = who;
+  return v;
+}
+// Spoken names come from one pack per voice: index {word: [byte offset, length, mouth cues]} and the MP3s back to back.
+const banks = {}, bankWords = {};
+function bank(nat){
+  if (!banks[nat]) banks[nat] = Promise.all([
+      fetch('assets/names-' + nat + '.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch('assets/names-' + nat + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })])
+    .then(([index, data]) => ({index, data})).catch(() => { delete banks[nat]; return null; });
+  return banks[nat];
+}
+function bankWord(nat, w){
+  const k = nat + '|' + w;
+  if (!bankWords[k]) bankWords[k] = bank(nat).then(b => {
+    const c = ctx(), e = b && b.index[w];
+    if (!c || !e) return null;
+    return new Promise((res, rej) => c.decodeAudioData(b.data.slice(e[0], e[0] + e[1]), res, rej)).then(buf => ({buf, lips: parseLips(e[2])}));
+  }).catch(() => { delete bankWords[k]; return null; });
+  return bankWords[k];
+}
+function slotParts(slot, who){
+  const said = slot === 'H' ? (who && who.say ? [who.say] : []) : HOSTS.filter(h => h.say).map(h => h.say);
+  if (!said.length) return [{w: '_yajman'}];
+  const out = [];
+  said.forEach((ws, i) => {
+    if (i > 0) out.push(i === said.length - 1 ? {w: '_and'} : {pause: 0.15});
+    ws.forEach(w => out.push({w}));
+  });
+  return out;
+}
+function sayHost(hi, en, seq, who){
+  if (!S.voice) return Promise.resolve(0);
+  hush();
+  const nat = naturalVoice(), id = ++sayId;
+  if (!nat) { speak(hi, en); return Promise.resolve(estimate(hi, en)); }
+  const parts = [];
+  seq.forEach(([k, v]) => { if (k === 'say') parts.push({clip: v}); else parts.push(...slotParts(v, who)); });
+  return Promise.all(parts.map(p => p.pause ? p : p.clip
+      ? clip(p.clip, nat).then(buf => buf && {buf, lips: lipCues(nat, p.clip), lead: 0.08, tail: 0.25})
+      : bankWord(nat, p.w).then(x => x && {buf: x.buf, lips: x.lips, lead: 0.03, tail: 0.06, name: true})))
+    .then(list => {
+      if (id !== sayId) return 0;
+      const c = ctx();
+      if (!c || list.some(x => !x)) { speak(hi, en); return estimate(hi, en); }
+      return playParts(c, list);
+    });
+}
+// Play recorded pieces back to back, trimming their silent lead-ins and tails, with one mouth timeline for them all.
+function playParts(c, list){
+  const srcs = [], timeline = [];
+  let t = c.currentTime + 0.05, first = true, end = t;
+  list.forEach((p, i) => {
+    if (p.pause) { t += p.pause; return; }
+    const start = first ? t : t - p.lead;
+    first = false;
+    const src = c.createBufferSource(); src.buffer = p.buf; src.connect(c.destination); src.start(Math.max(start, c.currentTime)); srcs.push(src);
+    while (timeline.length && timeline[timeline.length - 1][0] >= start) timeline.pop();
+    if (p.lips) { const sh = lipShift(p.buf, p.lips); p.lips.cues.forEach(([ct, m]) => timeline.push([start + ct + sh, m])); }
+    else timeline.push([start + p.lead, 'C'], [start + p.buf.duration - p.tail, 'X']);
+    const nxt = list.slice(i + 1).find(x => !x.pause);
+    t = start + p.buf.duration - p.tail + (!nxt ? 0 : p.name && nxt.name ? 0.02 : p.name ? 0.12 : 0.08);
+    end = start + p.buf.duration;
+  });
+  voiceSrcs = srcs;
+  const last = srcs[srcs.length - 1];
+  if (last) last.onended = () => { if (voiceSrcs === srcs) { voiceSrcs = []; lipStop(); } };
+  lipRun(c, timeline, end);
+  return end - c.currentTime;
+}
+function fillWelcome(){
+  const w = E.content.querySelector('.wl'); if (!w || !HOSTABLE) return;
+  w.classList.toggle('nohosts', !hostsOn());
+  const el = w.querySelector('.wl-hosts'); if (el) el.textContent = joinNames(HOSTS.map(h => h.en), 'en');
+}
+function drawHosts(){
+  if (!HOSTABLE) return;
+  const inp = $('hostIn'), note = $('hostNote');
+  if (document.activeElement !== inp) inp.value = hostText();
+  if (!hostsOn()) {
+    note.textContent = 'Optional. Type the hosts\' first names and ' + CH.name + ' will welcome and tease them by name. Leave it empty to keep everything general.';
+    return;
+  }
+  const known = HOSTS.filter(h => h.say), unknown = HOSTS.filter(h => !h.say);
+  note.innerHTML = (known.length ? CH.name + ' will say: <b>' + esc(known.map(h => h.say.join(' ')).join(', ')) + '</b>. ' : '')
+    + (unknown.length ? esc(CH.name) + ' doesn\'t know how to say <b>' + esc(unknown.map(h => h.en).join(', ')) + '</b> yet, so ' + CH.subj
+      + ' will say "यजमान जी" there; the screen still shows the name.' : '');
+}
+function saveHosts(v){
+  S.hostText = String(v || '').trim().slice(0, 80); setHosts(); save(); drawHosts(); preloadClips();
+  if (SL[S.i].id === 'welcome') { fillWelcome(); fit(); }
+}
 function lipStop(){ cancelAnimationFrame(lipRaf); clearTimeout(lipTimer); lipRaf = 0; lipTimer = 0; mouth('X'); }
-function lipCues(nat, key){
-  const s = LIPS[nat] && LIPS[nat][key], m = s && /^@(\d+)\|(.+)$/.exec(s);
+function parseLips(s){
+  const m = s && /^@(\d+)\|(.+)$/.exec(s);
   if (!m) return null;
   const cues = []; m[2].replace(/([A-HX])(\d+)/g, (_, k, t) => { cues.push([t / 100, k]); return ''; });
   return cues.length ? {onset: m[1] / 1000, cues} : null;
 }
+function lipCues(nat, key){ return parseLips(LIPS[nat] && LIPS[nat][key]); }
 // When the voice first gets loud in the clip as this phone decoded it. Some MP3 decoders add a few hundredths of a
 // second of silence at the start; comparing onsets keeps the mouth on the words anyway.
 function onsetOf(buf){
@@ -802,18 +957,25 @@ function onsetOf(buf){
   }
   return buf._on;
 }
+function lipShift(buf, lips){ const on = onsetOf(buf); return on == null ? 0 : Math.max(-0.2, Math.min(0.2, on - lips.onset)); }
 function lipFollow(c, t0, buf, nat, key){
   lipStop();
   const L = lipCues(nat, key);
   if (!L) { lipChatter(buf.duration, t0 - c.currentTime); return; }
-  const on = onsetOf(buf), shift = on == null ? 0 : Math.max(-0.2, Math.min(0.2, on - L.onset));
-  const wallEnd = performance.now() + (buf.duration + 2) * 1000;
+  const shift = lipShift(buf, L);
+  lipRun(c, L.cues.map(([t, m]) => [t0 + t + shift, m]), t0 + buf.duration);
+}
+// timeline: [[audio-clock time, mouth shape], ...] in order
+function lipRun(c, timeline, end){
+  lipStop();
+  if (!timeline.length) return;
+  const wallEnd = performance.now() + (end - c.currentTime + 2) * 1000;
   let i = 0;
   const step = () => {
-    const t = c.currentTime - t0 - shift;
-    if (t > buf.duration || performance.now() > wallEnd) { lipStop(); return; }
-    while (i + 1 < L.cues.length && L.cues[i + 1][0] <= t) i++;
-    mouth(t < L.cues[0][0] ? 'X' : L.cues[i][1]);
+    const t = c.currentTime;
+    if (t > end || performance.now() > wallEnd) { lipStop(); return; }
+    while (i + 1 < timeline.length && timeline[i + 1][0] <= t) i++;
+    mouth(t < timeline[0][0] ? 'X' : timeline[i][1]);
     lipRaf = requestAnimationFrame(step);
   };
   lipRaf = requestAnimationFrame(step);
@@ -838,7 +1000,7 @@ function shuffle(a){ for (let i = a.length - 1; i > 0; i--) { const j = Math.flo
 // Lines that name the hosts are spaced out: after one is spoken on a question, the hosts aren't named
 // again on that question or the next 5 (blessings and wrong answers together).
 const NAMED = __NAMED__;
-const named = line => NAMED.test(JSON.stringify(line));
+const named = line => (hostsOn() && !!line.host) || NAMED.test(JSON.stringify(line));
 function newQuestion(){ const id = SL[S.i].id; if (S.qLast !== id) { S.qLast = id; S.qCount = (S.qCount || 0) + 1; } }
 function namesOk(){ return !Number.isInteger(S.nameQ) || (S.qCount || 0) - S.nameQ > 5; }
 // A shuffled deck per kind of line, remembered on the phone, so no line comes back until every other one has been used,
@@ -871,7 +1033,7 @@ function deal(name, list){
 }
 function nextWrong(){
   const i = deal('w', WRONGS);
-  return personal(Object.assign({key: 'w' + String(i + 1).padStart(2, '0')}, WRONGS[i]));
+  return resolve(personal(Object.assign({key: 'w' + String(i + 1).padStart(2, '0')}, WRONGS[i])));
 }
 function fitBubble(ov){
   const bub = ov.querySelector('.bl-bubble'), body = ov.querySelector('.bl-body');
@@ -880,7 +1042,7 @@ function fitBubble(ov){
 }
 function nextBlessing(){
   const i = deal('b', BLESSINGS);
-  return personal(Object.assign({key: 'b' + String(i + 1).padStart(2, '0')}, BLESSINGS[i]));
+  return resolve(personal(Object.assign({key: 'b' + String(i + 1).padStart(2, '0')}, BLESSINGS[i])));
 }
 const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function petals(){
@@ -919,7 +1081,7 @@ function showBlessing(){
   drawPts();
   E.bless.hidden = false; anim(E.bless, 'in'); fitBubble(E.bless);
   petals(); chime();
-  setTimeout(() => { if (!E.bless.hidden) say(b.open_hi + ' ' + b.hi + ' ' + b.close_hi, b.open_en + ' ' + b.en + ' ' + b.close_en, b.key); }, 500);
+  setTimeout(() => { if (!E.bless.hidden) voiceLine(b.open_hi + ' ' + b.hi + ' ' + b.close_hi, b.open_en + ' ' + b.en + ' ' + b.close_en, b); }, 500);
 }
 function hideBless(){ if (E.bless.hidden) return; E.bless.hidden = true; $('petals').innerHTML = ''; hush(); }
 E.bless.addEventListener('click', e => { if (e.target.closest('.bl-chip')) return; hideBless(); });
@@ -936,7 +1098,7 @@ function showWrong(){
   clearTimeout(wrongT); wrongT = setTimeout(hideWrong, 7000);
   setTimeout(() => {
     if (E.oops.hidden) return;
-    say(w.hi, w.en, w.key).then(d => { if (E.oops.hidden) return; clearTimeout(wrongT); wrongT = setTimeout(hideWrong, (d + 1.4) * 1000); });
+    voiceLine(w.hi, w.en, w).then(d => { if (E.oops.hidden) return; clearTimeout(wrongT); wrongT = setTimeout(hideWrong, (d + 1.4) * 1000); });
   }, 350);
 }
 function hideWrong(){ clearTimeout(wrongT); if (!E.oops.hidden) { E.oops.hidden = true; hush(); } E.card.classList.remove('shake'); }
@@ -946,13 +1108,14 @@ function closeFx(){ hideBless(); hideWrong(); }
 function drawSettings(){
   [['sfxTog', S.sfx], ['voiceTog', S.voice]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'On' : 'Off'; });
   $('langHi').setAttribute('aria-pressed', String(S.lang === 'hi')); $('langEn').setAttribute('aria-pressed', String(S.lang === 'en'));
-  HOSTS.forEach((h, i) => ['en', 'hi'].forEach(k => { const el = $('host' + k + i); if (el && document.activeElement !== el) el.value = hostName(i, k); }));
+  CFG_HOSTS.forEach((h, i) => ['en', 'hi'].forEach(k => { const el = $('host' + k + i); if (el && document.activeElement !== el) el.value = hostName(i, k); }));
   drawVoices();
+  drawHosts();
 }
-HOSTS.forEach((h, i) => ['en', 'hi'].forEach(k => {
+CFG_HOSTS.forEach((h, i) => ['en', 'hi'].forEach(k => {
   const el = $('host' + k + i); if (!el) return;
   el.addEventListener('input', () => {
-    const list = HOSTS.map((x, j) => ({en: hostName(j, 'en'), hi: hostName(j, 'hi')}));
+    const list = CFG_HOSTS.map((x, j) => ({en: hostName(j, 'en'), hi: hostName(j, 'hi')}));
     list[i][k] = el.value.slice(0, 30); S.hosts = list; save(); fillHosts(); fit();
   });
   el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
@@ -977,6 +1140,18 @@ $('voiceSel').addEventListener('change', e => { unlock(); S.voiceName = e.target
 $('sfxTog').addEventListener('click', () => { unlock(); S.sfx = !S.sfx; save(); drawSettings(); if (S.sfx) chime(); });
 $('voiceTog').addEventListener('click', () => { unlock(); S.voice = !S.voice; save(); drawSettings(); if (!S.voice) hush(); else say(SOUND.tath.hi, SOUND.tath.en, 'tath'); });
 $('testSnd').addEventListener('click', () => { unlock(); chime(); setTimeout(() => say(SOUND.test.hi, SOUND.test.en, 'test'), 350); });
+if (HOSTABLE) {
+  $('hostForm').addEventListener('submit', e => { e.preventDefault(); saveHosts($('hostIn').value); $('hostIn').blur(); });
+  $('hostIn').addEventListener('change', e => saveHosts(e.target.value));
+  $('hostHear').addEventListener('click', () => { unlock(); saveHosts($('hostIn').value); welcome(); });
+  // "+ Add the hosts' names" on the welcome card opens the Menu at the Hosts box
+  E.content.addEventListener('click', e => {
+    if (!e.target.closest('[data-addhosts]')) return;
+    openSheet('grid');
+    const sec = $('hostSec'); if (sec) sec.scrollIntoView({block: 'start'});
+    setTimeout(() => { try { $('hostIn').focus(); } catch(_) {} }, 250);
+  });
+}
 
 // ---------------- overlays
 const sheets = {grid:$('gridSheet'), scores:$('scoreSheet')};
@@ -1029,6 +1204,7 @@ $('resetScores').addEventListener('click', e => arm(e.currentTarget, 'Tap again 
 // ---------------- boot
 function start(data){
   if (data && data.state) adopt(data.state); else load();
+  setHosts();
   layout();
   render(null);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fit());
@@ -1047,6 +1223,15 @@ def build(ev, out):
     cfg, tx, ch = ev.cfg, ev.texts, ev.character
     decor = cfg["decor"]
     sl = slides(ev)
+    hosts_html = (
+        '<div class="sec" id="hostSec">Hosts</div>'
+        '<form class="addrow" id="hostForm" autocomplete="off">'
+        '<input id="hostIn" type="text" maxlength="80" placeholder="Hosts\' first names, e.g. Asha, Ravi" '
+        'aria-label="Hosts\' names" enterkeyhint="done" autocapitalize="words" spellcheck="false">'
+        '<button class="wbtn" type="submit">Save</button></form>'
+        '<p class="note" id="hostNote"></p>'
+        f'<div class="setrow"><span class="sl">Hear {ch["name"]}\'s welcome</span>'
+        '<button class="wbtn ghost" id="hostHear" type="button">Play</button></div>') if ev.hostable else ""
     toran_port = toran(1080, 19, 40, (46, 1034), lambda x: abs(x - 540) >= 330, "tp", decor["garland"], decor["bell"])
     toran_land = toran(1920, 31, 42, (56, 1864), lambda x: x < 110 or x > 1810, "tl", decor["garland"], decor["bell"])
     theme = "".join(f"{k}:{v};" for k, v in cfg.get("theme", {}).items())
@@ -1057,6 +1242,12 @@ def build(ev, out):
                 f'<input id="hosthi{i}" type="text" maxlength="30" autocomplete="off" enterkeyhint="done" lang="hi" '
                 f'placeholder="{h["hi"]}" aria-label="Host name, in Hindi (now {h["hi"]})"></div>')
     host_rows = "".join(host_row(i, h) for i, h in enumerate(ev.hosts))
+    if ev.hosts and not ev.hostable:
+        many = len(ev.hosts) > 1
+        hosts_html = (f'<div class="sec">{"Hosts" if many else "Host"}</div>' + host_rows
+                      + f'<p class="note">{ch["name"]} uses {"these names" if many else "this name"} on the welcome card and in '
+                        f'{ch["pronoun"]} jokes. Leave a box empty to keep {ev.hosts_en}. Lines with a new name are spoken in the '
+                        "phone's own voice.</p>")
     page = f"""<title>{cfg['app_title']}</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1115,9 +1306,7 @@ def build(ev, out):
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="gridTitle">
     <div class="ph"><h2 id="gridTitle">Menu</h2><button class="x" data-close aria-label="Close">×</button></div>
     <div id="gridBody"></div>
-    <div class="sec">{'Hosts' if len(ev.hosts) > 1 else 'Host'}</div>
-    {host_rows}
-    <p class="note">{ch['name']} uses {'these names' if len(ev.hosts) > 1 else 'this name'} on the welcome card and in {ch['pronoun']} jokes. Leave a box empty to keep {ev.hosts_en}. Lines with a new name are spoken in the phone's own voice.</p>
+    {hosts_html}
     <div class="sec">Sound</div>
     <div class="setrow"><span class="sl">Bell and buzzer</span><button class="tog" id="sfxTog" aria-pressed="true">On</button></div>
     <div class="setrow"><span class="sl">{ch['name']}'s voice for blessings</span><button class="tog" id="voiceTog" aria-pressed="true">On</button></div>
@@ -1153,16 +1342,31 @@ def build(ev, out):
     names = ev.name_words
     named = "/" + "|".join(re.escape(n) for n in names) + "/" if names else "/(?!)/"
     c = ev.content
+
+    def with_seq(lst, kind):
+        # the host version of a line carries its pieces: recorded clips and name slots, in order
+        out = []
+        for e in lst:
+            e = dict(e)
+            if "host" in e:
+                e["host"] = {**e["host"], "seq": host_seq(host_version(e), kind)}
+            out.append(e)
+        return out
+    subj = {"his": "he", "her": "she"}.get(ch.get("pronoun", "his"), "they")
     sound = {k: {"hi": v["hi"], "en": v["en"]} for k, v in ev.sound_check().items()}
     page = (page.replace("__SLIDES__", js_str(sl)).replace("__ASK__", js_str(ASK))
                 .replace("__TIPS__", js_str(TIPS)).replace("__END__", js_str(end_default(ev)))
-                .replace("__BLESSINGS__", js_str(c.BLESSINGS)).replace("__WRONGS__", js_str(c.WRONGS))
+                .replace("__BLESSINGS__", js_str(with_seq(c.BLESSINGS, "b"))).replace("__WRONGS__", js_str(with_seq(c.WRONGS, "w")))
                 .replace("__LIPS__", ev.lips_file.read_text(encoding="utf-8") if ev.lips_file.exists() else "{}")
-                .replace("__WELCOME__", js_str(c.WELCOME)).replace("__SOUND__", js_str(sound))
+                .replace("__WELCOME__", js_str(with_seq([c.WELCOME], "welcome")[0])).replace("__SOUND__", js_str(sound))
                 .replace("__KEY__", js_str(cfg["storage_key"])).replace("__PREFER__", js_str(ch.get("gender", "m")))
                 .replace("__NATURAL__", js_str(nat)).replace("__NAT_LABEL__", js_str(nat_label))
                 .replace("__NAMED__", named)
-                .replace("__HOSTS__", js_str([{"en": h["en"], "hi": h["hi"]} for h in ev.hosts])))
+                .replace("__HOSTS__", js_str([] if ev.hostable else [{"en": h["en"], "hi": h["hi"]} for h in ev.hosts]))
+                .replace("__HOSTABLE__", "true" if ev.hostable else "false")
+                .replace("__DEFAULT_HOSTS__", js_str(", ".join(h["en"] for h in ev.hosts)))
+                .replace("__CH__", js_str({"name": ch["name"], "poss": ch.get("pronoun", "his"), "subj": subj}))
+                .replace("__NAMEBANK__", js_str(namebank.table()) if ev.hostable else "[]"))
     leftover = re.findall(r"__[A-Z_]+__", page)
     assert not leftover, leftover
     out = Path(out)
@@ -1180,6 +1384,13 @@ def build(ev, out):
     clips = [f for f in sorted(ev.voice_dir.glob("v-*.mp3")) if f.name in wanted] if ev.voice_dir.exists() else []
     for f in clips:
         shutil.copy(f, out / "assets" / f.name)
+    if ev.hostable:  # the spoken name bank, one pack per voice
+        for v in ev.voices:
+            for ext in ("mp3", "json"):
+                src = namebank.BANK / f"{v}.{ext}"
+                if not src.exists():
+                    raise SystemExit(f"no name bank for {v}: run build.py {ev.dir} --names")
+                shutil.copy(src, out / "assets" / f"names-{v}.{ext}")
     missing = len(wanted) - len(clips)
     print("slides", len(sl), "| emoji", len(codes), "| voice clips", len(clips), f"(missing {missing})" if missing else "",
           "| page KB", len(page.encode()) // 1024)

@@ -10,6 +10,8 @@ Checks:
   welcome  tapping the cartoon on the welcome screen plays the welcome line with moving lips
   fit      every blessing and wrong-answer line fits its speech bubble (landscape + portrait, Hindi + English)
   names    150 simulated questions: lines naming the hosts are at least 6 questions apart; nothing repeats too soon
+  hosts    (events with a Hosts setting) typed names show on the welcome card and in the lines, the voice says them
+           from the name bank with moving lips, unknown names fall back to "यजमान जी", clearing them goes generic
 """
 import argparse
 import random
@@ -101,10 +103,14 @@ def check_fit(b, url):
     probe = """(sel) => { const ov = document.querySelector(sel), bub = ov.querySelector('.bl-bubble'), body = ov.querySelector('.bl-body');
       return [parseFloat(bub.style.getPropertyValue('--bf') || 1), bub.offsetHeight, body.clientHeight, bub.scrollWidth > bub.clientWidth + 2]; }"""
     nb, nw = len(EV.content.BLESSINGS), len(EV.content.WRONGS)
-    for name, vp in [("landscape", {"width": 1280, "height": 720}), ("portrait", {"width": 390, "height": 844})]:
-        for lang in ("hi", "en"):
+    runs = [(n, vp, lang, "") for n, vp in [("landscape", {"width": 1280, "height": 720}), ("portrait", {"width": 390, "height": 844})]
+            for lang in ("hi", "en")]
+    if EV.hostable:  # the longest names people are likely to type
+        runs += [(n, vp, "hi", "Chandrashekhar, Subramaniam, Venkatesh") for n, vp in
+                 [("landscape", {"width": 1280, "height": 720}), ("portrait", {"width": 390, "height": 844})]]
+    for name, vp, lang, hosts in runs:
             pg = b.new_page(viewport=vp)
-            fresh(pg, url, {"at": "p1", "voice": False, "sfx": False, "lang": lang,
+            fresh(pg, url, {"at": "p1", "voice": False, "sfx": False, "lang": lang, "hostText": hosts,
                             "decks": {"w": {"n": nw, "q": list(range(nw))[::-1], "recent": []},
                                       "b": {"n": nb, "q": list(range(nb))[::-1], "recent": []}}})
             worst, bad = 1.0, []
@@ -121,20 +127,24 @@ def check_fit(b, url):
                     bad.append(f"blessing {i + 1}")
                 pg.click("#bless", position={"x": 20, "y": 20}); pg.wait_for_timeout(70)
                 pg.click("#ansBtn"); pg.wait_for_timeout(70)
-            print(f"fit: {name:9s} {lang}: smallest text scale {worst:.2f} | overflowing: {bad or 'none'}")
+            print(f"fit: {name:9s} {lang}{' + long host names' if hosts else ''}: smallest text scale {worst:.2f} | overflowing: {bad or 'none'}")
             ok = ok and not bad
             pg.close()
     return ok
 
 
 def check_names(b, url, questions=150, seed=7):
+    state = {"at": "w1", "voice": False, "sfx": False}
     names = EV.name_words
+    if EV.hostable:
+        state["hostText"] = "Asha, Ravi"
+        names = ["आशा", "रवि", "Asha", "Ravi"]
     if not names:
         print("names: no hosts configured, skipped"); return True
     named = re.compile("|".join(re.escape(n) for n in names))
     random.seed(seed)
     pg = b.new_page(viewport={"width": 1280, "height": 720})
-    fresh(pg, url, {"at": "w1", "voice": False, "sfx": False})
+    fresh(pg, url, state)
     events, q = [], 0
     while q < questions:
         if not pg.is_visible("#wrongBtn"):
@@ -170,7 +180,52 @@ def check_names(b, url, questions=150, seed=7):
     return (not gaps or min(gaps) >= 6) and min(closest.values()) >= 8
 
 
-CHECKS = {"load": check_load, "lips": check_lips, "welcome": check_welcome, "fit": check_fit, "names": check_names}
+def check_hosts(b, url):
+    if not EV.hostable:
+        print("hosts: this event has no Hosts setting, skipped"); return True
+    ok = True
+    pg = b.new_page(viewport={"width": 1280, "height": 720})
+    errs, reqs = [], []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    pg.on("request", lambda r: reqs.append(r.url.rsplit("/", 1)[1]))
+    # no names: the welcome card offers to add them
+    fresh(pg, url, {"at": "welcome"})
+    add_visible = pg.is_visible(".wl-add") and not pg.is_visible(".wl-hosts")
+    # type names in the Menu, as a person would
+    pg.click(".wl-add"); pg.wait_for_timeout(400)
+    pg.fill("#hostIn", "Reshma, Shobhit"); pg.press("#hostIn", "Enter"); pg.wait_for_timeout(300)
+    note = pg.inner_text("#hostNote")
+    pg.click("#gridSheet [data-close]"); pg.wait_for_timeout(300)
+    card = pg.inner_text(".wl-hosts") if pg.is_visible(".wl-hosts") else ""
+    pg.click(".wl-god"); seq = squash(pg.evaluate(SAMPLE, [8000, "#content svg.bhag"]))
+    voice = EV.voices[0]
+    got_bank = f"names-{voice}.mp3" in reqs and f"names-{voice}.json" in reqs
+    got_pieces = any(f"-{EV.content.WELCOME['host']['key']}0.mp3" in r for r in reqs)
+    print(f"hosts: add-button {add_visible} | note '{note[:60]}' | card '{card}' | name pack {got_bank} | pieces {got_pieces} | mouth {seq[:40]}")
+    ok = add_visible and "रेशमा" in note and card == "Reshma and Shobhit" and got_bank and got_pieces and len(set(seq) - set("X-_")) >= 4
+    # a host line on a puzzle shows the names
+    host_w = [i for i, w in enumerate(EV.content.WRONGS) if "host" in w]
+    nb, nw = len(EV.content.BLESSINGS), len(EV.content.WRONGS)
+    fresh(pg, url, {"at": "p1", "hostText": "Reshma, Shobhit", "decks": {"w": {"n": nw, "q": [host_w[0]], "recent": []}}})
+    pg.click(".brand"); pg.click("#wrongBtn"); pg.wait_for_timeout(300)
+    line = pg.inner_text("#oopsText") + " " + pg.inner_text("#oopsEn")
+    seq = squash(pg.evaluate(SAMPLE, [6000, OVERLAY_SVG]))
+    print(f"hosts: wrong-answer line '{line[:70]}' | mouth {seq[:40]}")
+    ok = ok and bool(re.search("रेशमा|शोभित", line)) and len(set(seq) - set("X-_")) >= 4
+    # a name the bank doesn't know
+    fresh(pg, url, {"at": "welcome", "hostText": "Xyzzy"})
+    pg.click("#gridBtn"); pg.wait_for_timeout(300)
+    unknown_note = pg.inner_text("#hostNote")
+    pg.fill("#hostIn", ""); pg.press("#hostIn", "Enter"); pg.wait_for_timeout(300)
+    pg.click("#gridSheet [data-close]"); pg.wait_for_timeout(300)
+    cleared = pg.is_visible(".wl-add") and not pg.is_visible(".wl-hosts")
+    print(f"hosts: unknown name note '{unknown_note[:80]}' | cleared back to general {cleared} | errors {errs or 'none'}")
+    ok = ok and "यजमान जी" in unknown_note and cleared and not errs
+    pg.close()
+    return ok
+
+
+CHECKS = {"load": check_load, "lips": check_lips, "welcome": check_welcome, "fit": check_fit, "names": check_names, "hosts": check_hosts}
 
 
 def main():

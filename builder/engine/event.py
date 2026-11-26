@@ -2,6 +2,7 @@
 and deity.py (the festival cartoon)."""
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -19,6 +20,56 @@ TEXT_DEFAULTS = {
     "wrong_banner": "GALAT JAWAB!",
     "warmup_bottom": "WARM-UP ROUND",
 }
+
+
+SLOT = re.compile(r"\{(H|HOSTS)\}")
+
+
+def host_version(entry):
+    """The version of a line used when the app knows the hosts' names: entry["host"] laid over the entry, or None."""
+    h = entry.get("host")
+    return {**{k: v for k, v in entry.items() if k != "host"}, **h} if h else None
+
+
+def spoken(line, kind):
+    """The Hindi the voice says: blessings are opener + blessing + closer."""
+    return f"{line['open_hi']} {line['hi']} {line['close_hi']}" if kind == "b" else line["hi"]
+
+
+def pieces(text):
+    """Split a host line into ("say", words to record) and ("slot", "H" or "HOSTS") parts.
+
+    Text right after a name loses its leading comma or danda (the app leaves a pause there), and text right
+    before a name gets a comma if it has no punctuation, so the recording ends on a continuing tone.
+    """
+    raw, pos = [], 0
+    for m in SLOT.finditer(text):
+        raw += [("say", text[pos:m.start()]), ("slot", m.group(1))]
+        pos = m.end()
+    raw.append(("say", text[pos:]))
+    out = []
+    for i, (kind, val) in enumerate(raw):
+        if kind == "say":
+            if i > 0:
+                val = val.lstrip(" ,।!?.")
+            val = val.strip()
+            if not val:
+                continue
+            if i < len(raw) - 1 and val[-1] not in ",।!?.":
+                val += ","
+        out.append((kind, val))
+    return out
+
+
+def host_seq(line, kind):
+    """[["say", clip key], ["slot", "H"], ...] for the app; recorded pieces are keyed <host key>0, 1, 2..."""
+    seq, n = [], 0
+    for k, v in pieces(spoken(line, kind)):
+        if k == "say":
+            seq.append(["say", f"{line['key']}{n}"]); n += 1
+        else:
+            seq.append(["slot", v])
+    return seq
 
 
 def _load(path, name):
@@ -48,7 +99,9 @@ class Event:
     def hosts_en(self):
         """"Reshma and Shobhit", "Asha, Ravi and Meena"."""
         names = [h["en"] for h in self.hosts]
-        return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+        if len(names) < 2:
+            return "".join(names)
+        return ", ".join(names[:-1]) + " and " + names[-1]
 
     @property
     def name_words(self):
@@ -87,8 +140,20 @@ class Event:
         out = {b.get("key", f"b{i:02d}"): f"{b['open_hi']} {b['hi']} {b['close_hi']}" for i, b in enumerate(c.BLESSINGS, 1)}
         out.update({w.get("key", f"w{i:02d}"): w["hi"] for i, w in enumerate(c.WRONGS, 1)})
         out[c.WELCOME["key"]] = c.WELCOME["hi"]
+        for kind, lst in (("b", c.BLESSINGS), ("w", c.WRONGS), ("welcome", [c.WELCOME])):
+            for e in lst:
+                h = host_version(e)
+                if h:
+                    say = [v for k, v in pieces(spoken(h, kind)) if k == "say"]
+                    out.update({f"{h['key']}{n}": v for n, v in enumerate(say)})
         out.update({k: v["hi"] for k, v in self.sound_check().items()})
         return out
+
+    @property
+    def hostable(self):
+        """True when some lines have a host version, so the app offers the Hosts setting."""
+        c = self.content
+        return any("host" in e for e in c.BLESSINGS + c.WRONGS + [c.WELCOME])
 
     def level_ranges(self):
         out = {}
